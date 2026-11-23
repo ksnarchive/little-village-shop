@@ -177,3 +177,50 @@ This is a separate graphical check, not the Godot 4.3 headless run.
 - This is a short Linux graphical check, not a Windows build or exhaustive resolution
   sweep. No day cycle, game saves or new large systems were added. Balance, goods,
   customers and sales totals reset on restart. Routes remain authored for this room.
+
+## Stage 6 — workdays and game time
+
+- Started from current merged `main`, verified again before publishing at
+  `ccd589ced2626f5ccee7f227ec9a03e1454080c8`, on separate branch `feat/day-cycle`.
+  Existing room, inventories, supplier, shelves, customer FSM, routes and checkout are reused.
+- Official **Godot 4.3.stable.official.77dcf97d8** passes editor import,
+  **187 inventory/scene/input + 61 customer + 72 checkout + 80 day checks**
+  (**400 total, zero failures**) and the 60-frame main-scene smoke run through
+  `bash tests/run_checks.sh`. The final run has no logged engine/script errors or
+  leaked-resource warnings. The same runner includes the day suite in GitHub Actions.
+- Clock tests check 08:00, 08:59/09:00, 11:59/12:00, 13:59/14:00, 17:59/18:00,
+  invalid deltas, ordered boundaries after a long frame, and the actual shorter lunch
+  arrival delay. All five modal views pause game time and resume it on close.
+  Existing customer/checkout suites explicitly use a frozen 09:00 clock to retain their
+  focused route/transaction coverage without accidentally waiting through preparation.
+- Closing tests include an empty-handed visitor, an already waiting customer plus an
+  incoming shopper, checkout service after 18:00, queue advance and the last paid exit.
+  Admission is blocked immediately; the report waits until all NPCs are gone. Checkout
+  movement continues while its panel is open and can trigger the report without closing
+  that panel manually. Paid customers count once; empty-handed visitors do not count.
+- Three **complete automatic workdays** run in the real main scene at fixed 60 Hz using
+  the production 1.5-game-minutes/second clock. Each day buys two apples (6 coins),
+  stocks four apples and one milk, and serves all five visitors (32 coins). Reports show
+  profit 26 and successive balances **126, 152, 178**. Each transition starts at 08:00,
+  preserves storage and the untraded bag contents, resets only daily counters, and emits
+  exactly one report. Every simulated physics frame checks goods plus session sales and
+  the balance equation; no customer, goods or money duplication was observed.
+- Additional checks cover purchase/sale observers seeing committed daily values, rejected
+  purchases, full storage rollback, duplicate sales/next-day clicks, negative profit,
+  report snapshot isolation, Esc/I locks, hidden-transaction rejection, retained unsold
+  shelf stock and earned coins, and report fit within the 640×360 viewport.
+- Graphical Linux verification uses the same official **Godot 4.3**, Compatibility renderer
+  (software Mesa). Opened the bag with actual desktop input, confirmed the clock stayed
+  at 08:36 while the menu remained open, and closed it with Esc. Inspected the rendered
+  clock and report. Clicked **«Следующий день»** on the desktop and observed **day 2,
+  08:00**, retained **99 coins** and the remaining apples on the shelf.
+- [Clock during lunch](day-clock.png) and [day report](day-summary.png) are unmodified
+  **640×360 viewport captures** from that Godot 4.3 renderer. A temporary external preview
+  harness used the real purchase/transfer/NPC/service APIs and advanced the clock to show
+  noon and closing quickly. The captured example buys two apples (6 coins), sells one
+  apple (5 coins), and correctly reports **profit −1, balance 99**. The harness is not part
+  of the game and does not add a debug shortcut or disk save mechanism.
+- This is a short Linux visual check plus automated multi-day physics simulation, not a
+  Windows build or exhaustive display sweep. The cloud desktop has no audio device;
+  Godot used its dummy audio fallback. Touch/gamepad support, Windows export and disk
+  saves remain separate work. Restarting the application still creates a fresh game.
