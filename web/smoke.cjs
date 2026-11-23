@@ -51,7 +51,8 @@ async function check(name) {
       const frame = await pixels(document.getElementById('canvas').toDataURL());
       for (let pose = 0; pose < 12; pose++) {
         const samples = [];
-        for (let y = 0; y < 32; y += 2) for (let x = 0; x < 24; x += 2) {
+        // Near furniture the head can be covered; the lower body stays visible.
+        for (let y = 16; y < 32; y += 2) for (let x = 0; x < 24; x += 2) {
           const i = (y * source.width + pose * 24 + x) * 4;
           if (source.data[i + 3] === 255) samples.push([x, y, ...source.data.slice(i, i + 3)]);
         }
