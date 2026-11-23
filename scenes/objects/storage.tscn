@@ -1,0 +1,22 @@
+[gd_scene load_steps=4 format=3]
+
+[ext_resource type="Script" path="res://scripts/storage.gd" id="1"]
+[ext_resource type="Resource" path="res://data/item_catalog.tres" id="2"]
+
+[sub_resource type="RectangleShape2D" id="StorageShape"]
+size = Vector2(64, 32)
+
+[node name="Storage" type="Node2D"]
+script = ExtResource("1")
+prompt = "E  Open storage"
+interaction_offset = Vector2(0, 24)
+catalog = ExtResource("2")
+capacity = 60
+initial_stock = {"apple": 6, "bread": 4, "milk": 3}
+
+[node name="Body" type="StaticBody2D" parent="."]
+collision_layer = 2
+collision_mask = 0
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="Body"]
+shape = SubResource("StorageShape")
