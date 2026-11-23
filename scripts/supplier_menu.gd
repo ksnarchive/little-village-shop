@@ -94,6 +94,7 @@ func _button(node_name: String, text: String, tooltip: String) -> Button:
 	button.tooltip_text = tooltip
 	button.theme_type_variation = &"QuantityButton"
 	button.custom_minimum_size = Vector2(30, 30)
+	InventoryMenu.fit_web_button(button)
 	return button
 
 func _adjust(item_id: StringName, delta: int) -> void:

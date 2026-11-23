@@ -1,6 +1,6 @@
 # 🌿 Little Village Shop
 
-A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows.
+A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows and Web (iPhone Safari).
 
 ## Cozy shop makeover (stage 8)
 
@@ -146,11 +146,20 @@ Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/d
 Previews: [main menu](docs/save-main-menu.png) · [manual save](docs/save-pause-menu.png) ·
 [busy shop explanation](docs/save-unsafe-menu.png) · [new game confirmation](docs/save-new-confirmation.png).
 
+## Web / iPhone
+
+Web branch: `web-iphone-safari`, based on the updated interior in `stage-8-cozy-shop`.
+[How to play and enable GitHub Pages from iPhone](docs/web-iphone.md).
+The target URL is not a promise of publication: check the deployment result in the PR.
+
 ## Run
 
 Open `project.godot` in Godot **4.3** and press F5. No external assets or plugins are needed.
 The base viewport is 640×360 with nearest filtering and integer canvas scaling.
-This is a desktop keyboard/mouse prototype; touch controls and a Windows export are pending.
+The Web export adds an external touch D-pad and E/I/Esc buttons, mobile layout and
+browser saves. See [iPhone play / GitHub Pages setup](docs/web-iphone.md) for the
+phone-only steps, deployment status caveat and browser limitations. Windows export
+remains pending.
 
 ## Code map
 

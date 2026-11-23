@@ -61,6 +61,7 @@ func _build_menu() -> void:
 func _button(text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
+	InventoryMenu.fit_web_button(button)
 	button.pressed.connect(action)
 	content.add_child(button)
 	return button

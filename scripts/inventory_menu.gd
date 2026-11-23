@@ -45,8 +45,12 @@ var _prompt_text: String = ""
 
 func _ready() -> void:
 	_apply_theme()
+	if OS.has_feature("web"):
+		controls_hint.text = "E · взаимодействие   I · рюкзак   Esc · сохранить / меню"
 	close_button.pressed.connect(close_menu)
 	_build_pause_menu()
+	for button in [close_button, save_button, next_day_button, checkout_menu.serve_button]:
+		fit_web_button(button)
 
 func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void:
 	_bag = bag
@@ -71,10 +75,12 @@ func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void
 		var take := Button.new()
 		take.text = "Take 1"
 		take.pressed.connect(_transfer.bind(item.id, true))
+		fit_web_button(take)
 		row.add_child(take)
 		var deposit := Button.new()
 		deposit.text = "Store 1"
 		deposit.pressed.connect(_transfer.bind(item.id, false))
+		fit_web_button(deposit)
 		row.add_child(deposit)
 		rows_container.add_child(row)
 		_rows[item.id] = {"quantities": quantities, "take": take, "deposit": deposit}
@@ -275,6 +281,11 @@ func _refresh() -> void:
 		deposit.visible = view == View.STORAGE
 		take.disabled = not (_storage.can_remove(item_id, 1) and _bag.can_add(item_id, 1))
 		deposit.disabled = not (_bag.can_remove(item_id, 1) and _storage.can_add(item_id, 1))
+
+# Web controls stay large enough to tap; catalog rows already scroll vertically.
+static func fit_web_button(button: Button) -> void:
+	if OS.has_feature("web"):
+		button.custom_minimum_size = button.custom_minimum_size.max(Vector2(44, 44))
 
 func _apply_theme() -> void:
 	$Root.theme = cozy_theme()
