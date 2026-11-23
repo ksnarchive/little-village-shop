@@ -224,3 +224,47 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   Windows build or exhaustive display sweep. The cloud desktop has no audio device;
   Godot used its dummy audio fallback. Touch/gamepad support, Windows export and disk
   saves remain separate work. Restarting the application still creates a fresh game.
+
+## Stage 7 — saving and loading
+
+- Started from merged `main` at `5b3008496868d3a7d9c295fc7e1d84f37da79b3b`,
+  rechecked against the remote before publishing; branch `feat/stage-7-save-load`.
+  Reused the existing room, inventories, customer routes, day FSM and economy.
+- Official **Godot 4.3.stable.official.77dcf97d8**: editor import, **187 inventory/scene/input,
+  61 customer, 72 checkout, 80 day and 127 save checks** (**527 total, zero failures**),
+  followed by the 60-frame startup-menu smoke run through `tests/run_checks.sh`.
+  The same runner is used in GitHub Actions and rejects logged engine/script errors.
+- Three days of purchases, stock transfers, paid baskets, summary saves/loads and morning
+  saves/loads restore each inventory, balance, cumulative statistics and daily report.
+  Existing day tests still simulate three complete workdays with real NPC physics.
+  Save tests separately exercise real NPC/queue blocking, repeated scene loads, precise
+  64-bit money, fractional lunch time, restored arrival policy, menu controls and HUD signals.
+- Real isolated files under `user://save_tests` cover no file, corrupt JSON, missing fields,
+  invalid quantities/IDs/capacities, unsupported old/future versions even with a valid backup,
+  repeat loads without accumulating goods/NPCs, valid overwrites and backup recovery.
+  Deterministic injected I/O failures cover partial temp writes, invalid read-back bytes,
+  failed backup copy, backup rename and primary rename. Every failure checks unchanged
+  primary bytes and successful loading of the previous snapshot. Stale temporary files are
+  ignored; a later successful write recovers. Corrupt primary bytes never replace the backup.
+- Additional tests verify failed end-of-day/morning autosaves preserve disk data and display
+  useful errors. The report with a wrapped error fits the 640×360 viewport. Physical Esc
+  opens/closes pause; I and Esc retain bag behavior. New Game confirmation/cancel is tested
+  through the application entry scene, without touching the player's actual save path.
+- Graphical Linux check with the same **Godot 4.3**, Compatibility renderer/software Mesa:
+  inspected main menu, clicked New Game, pressed Esc, clicked Save Game and observed
+  the success message with a paused 08:00 clock. Labels/buttons fit the inspected canvas.
+  A separate external preview harness called the actual scene/save APIs to capture
+  unmodified **640×360 viewport images**: [main menu](save-main-menu.png),
+  [pause/save](save-pause-menu.png), [busy shop](save-unsafe-menu.png),
+  [new-game confirmation](save-new-confirmation.png), and
+  [failed autosave on the report](save-report-error.png). The harness is not shipped.
+  Captures contain only the game viewport, without desktop content or image compositing.
+- The desktop has no audio device: the interactive run used Godot's dummy-audio fallback;
+  final captures explicitly used the Dummy driver. No audio functionality was changed.
+- Scope/limits: one local versioned slot plus an automatic recovery generation. Manual
+  saves require all visitors and departures to finish; NPCs and unpaid baskets are not
+  serialized. Continue respawns the player at the safe central start and resets arrival
+  delay. Version 1 is the first format; unsupported versions are explained and preserved,
+  not migrated. Temp/backup/atomic rename protect against checked I/O failures and interrupted
+  replacement; Godot FileAccess does not expose a portable directory-fsync guarantee for
+  sudden power loss. Windows runtime/export and touch/gamepad remain unverified.

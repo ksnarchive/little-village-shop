@@ -19,7 +19,7 @@ A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Wi
   **Обслужить** to accept payment; **Esc**, **I** or Close returns to the room.
 - Successful sales empty exactly one NPC basket, credit the product's `selling_price`,
   and show a green confirmation with a small pixel coin sparkle. The HUD tracks gross
-  revenue and the number of completed sales for this session.
+  revenue and the number of completed sales across saved sessions.
 - The shop starts with **100 coins**. The HUD and supplier panel show the current balance.
   Each order delivers one product directly to storage when there are enough coins and the
   full quantity fits. The panel updates the balance and storage after the delivery.
@@ -31,10 +31,10 @@ A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Wi
   transfers occur. Esc, I or Close dismisses the menu and restores movement.
 - Empty, partly stocked and full shelves look different in the room: product icons gradually
   fill the two tiers and a small stock meter tracks total occupancy. Each shelf keeps its
-  own stock when the menu closes; restarting resets both shelves.
+  own stock when the menu closes and when resuming a saved game.
 
 The bag starts empty (24-unit capacity). Storage holds 6 apples, 4 bread and 3 milk
-(60-unit capacity) as **free demo stock**. Restarting resets inventory and balance.
+(60-unit capacity) as **free demo stock**. New Game resets inventory and balance; Continue restores them.
 Both shelves start empty, each with its own **12-unit capacity** shared across products.
 Visitors arrive automatically at the south doorway after the shop opens at 09:00
 (first after 4 seconds). They walk
@@ -78,10 +78,48 @@ button enables automatically; there is no need to close/reopen the panel between
 - Day transitions reuse the same economy, bag, storage and shelf inventories. Coins and
   unsold goods persist; only daily totals and the arrival delay reset. Purchases during
   preparation count toward that day's expenses. Free demo stock is not an expense.
-- Reports are in-memory snapshots. Restarting still starts a fresh game; there is no disk
-  save system. A quiet/empty shop also completes its day with a zero-sales report.
+- A quiet/empty shop also completes its day with a zero-sales report. The completed
+  report and next morning are automatically saved; Continue can reopen a finished report.
 
 Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/day-summary.png).
+
+## Saving and continuing (stage 7)
+
+- Launch opens **«Продолжить» / «Новая игра»** over the existing shop. Continue is
+  enabled only for a fully validated save or recoverable backup. Missing, damaged and
+  unsupported saves have clear messages. New Game asks for confirmation before replacing
+  an existing slot; Cancel has initial keyboard focus. Confirmed New Game saves the fresh morning.
+- **Esc** in the room opens pause. **«Сохранить игру»** writes the current day, fractional
+  game minute, phase, balance, session and daily accounting, bag, storage and both named shelves.
+  Esc/I/Close return to play. Existing Esc behavior inside other menus is preserved.
+- Manual saving requires an **empty shop**, including browsing visitors, waiting baskets,
+  paid departures and deferred NPC deletion. Otherwise the button explains what to finish.
+  No unpaid goods are silently discarded to save. Pause stops player, visitors and clock.
+- Autosave runs after the final visitor leaves and the day report appears, and again after
+  **«Следующий день»** resets daily counters at 08:00. Success/failure appears in the report
+  or HUD, and the pause panel. A failed autosave leaves the last good save available.
+- The single slot is **`user://village_save.json`**, schema **version 1**. On Windows, Godot's
+  default location is `%APPDATA%/Godot/app_userdata/Little Village Shop/`. `.bak` is a recovery
+  generation, not an additional selectable slot. No cloud sync is used.
+- A save is serialized to `.tmp`, flushed, closed and read back through full validation.
+  The previous valid primary is copied to `.bak.tmp`, validated and atomically renamed to
+  `.bak`; only then is `.tmp` atomically renamed over the primary. No delete-before-write.
+  Failed writes/copies/renames preserve the primary; corrupt primary data never replaces a
+  valid backup. A missing/corrupt primary can fall back to `.bak`, with a visible notice.
+  Uncommitted `.tmp` files are ignored. Unsupported versions are rejected without silent
+  fallback/downgrade or file changes; version migration is not yet needed or provided.
+- Loading validates every field and all inventories before changing gameplay. Quantities
+  replace existing stock, the empty customer flow is rebuilt, stale menus/effects are cleared,
+  and UI signals refresh the clock, economy, shelves and inventories. Reports are reconstructed
+  from saved daily totals. The shopkeeper resumes at the original safe central position;
+  arrivals restart with the usual four-second delay. NPC paths, player position and arrival
+  countdown are intentionally not serialized. Saves cannot contain NPC-held goods.
+- Monetary values and sales counters use canonical decimal strings to preserve full signed
+  64-bit integer precision through JSON. Inventory IDs, capacities, quantities, phase/time,
+  numeric ranges and accounting relationships are validated. Invalid snapshots are never applied.
+
+Previews: [main menu](docs/save-main-menu.png) · [manual save](docs/save-pause-menu.png) ·
+[busy shop explanation](docs/save-unsafe-menu.png) · [new game confirmation](docs/save-new-confirmation.png).
 
 ## Run
 
@@ -94,6 +132,7 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | Files | Responsibility |
 | --- | --- |
 | `scripts/player.gd`, `scenes/characters/player.tscn` | Existing CharacterBody2D movement and procedural character |
+| `scripts/start_menu.gd`, `scenes/start.tscn`, `scripts/save_store.gd` | Application entry, title/confirmation menu and validated single-slot persistence |
 | `scripts/shop.gd`, `scenes/main.tscn` | Existing room and small composition/wiring layer |
 | `scripts/interactable.gd` | Group-based endpoint, prompt, interaction position and actor signal |
 | `scripts/interaction_controller.gd` | Player child component: nearest target, range, obstruction ray and E input |
@@ -111,7 +150,7 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
 | `assets/items/` | Original SVG icons composed on a 16×16 pixel grid |
-| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_day_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
+| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_day_tests.gd`, `tests/run_save_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
 
 Inventory capacity counts **total units**, not slots. Each product has one stack limited by
 `max_stack_size`. Rejected operations change nothing and emit no change notification.
@@ -119,7 +158,7 @@ A transfer validates both inventories and updates both before emitting signals.
 Inventories share catalog product resources; UI code does not store a second copy of stock.
 `serialize()` returns an independent dictionary, and `restore()` validates a complete candidate
 before replacing stock, accepting JSON whole numbers and rejecting invalid IDs/quantities.
-These are inventory serialization primitives, **not a game save/load system**.
+The game save system composes these validation rules with day/economy snapshots.
 
 To add a product, create an `ItemData` resource and add it to `data/item_catalog.tres`.
 The bag and storage menus build rows from this catalog without product-specific logic.
@@ -147,9 +186,9 @@ removal and departure without callbacks, then `ShopEconomy.sell()` commits baske
 balance, revenue and completed-sales count before any notification. The flow/economy guards
 reject reentrant service, repeated clicks and stale identities. Invalid baskets, mismatched
 catalogs, negative prices and integer overflows leave goods and coins untouched. Revenue
-is gross selling proceeds, not profit; purchases do not increase it. The existing revenue and sales HUD remains session-wide. Separate daily counters include
+is gross selling proceeds, not profit; purchases do not increase it. The existing revenue and sales HUD remains cumulative across saves. Separate daily counters include
 only successful purchases and paid sales, committed before transaction notifications.
-Daily counters reset at the next morning; session totals reset only on restart.
+Daily counters reset at the next morning; session totals reset only with New Game.
 
 Checkout preview: [successful sale with the next basket](docs/checkout-sale.png).
 
@@ -188,15 +227,19 @@ coin cleanup. Day checks cover minute boundaries, actual lunch arrival delay, al
 clock pauses, empty and occupied closing, after-hours sales, final departures, report input
 locks/snapshots, duplicate next-day clicks, negative profit and three automatic full workdays.
 Every physics frame checks goods plus sold units and the balance equation across days.
-A main-scene smoke run follows the tests.
+Save checks add three-day disk round trips, report/morning autosaves, manual save input,
+missing/corrupt/unsupported files, precise 64-bit money, snapshot validation, repeated loads,
+NPC/queue save guards, menu confirmation/cancel, HUD refresh, and injected partial-write,
+read-back, backup-copy, backup-rename and primary-rename failures. Recovery and byte-for-byte
+preservation of the previous primary are checked. Tests use their own `user://save_tests` slot.
+A startup-menu smoke run follows the tests.
 
 Headless results do not establish visual quality or Windows compatibility. See
 [`docs/validation.md`](docs/validation.md) for this milestone's actual verification and limitations.
 
 ## Next milestones
 
-1. Versioned game saves (separate milestone).
-2. Original art/audio, broader desktop testing and Windows export.
+1. Original art/audio, broader desktop testing and Windows export.
 
 The current procedural room is preserved; village expansion remains future work.
 All current graphics are original project placeholders; no commercial game assets are used.
