@@ -5,12 +5,17 @@ const FLOOR := Color("#e7cda4")
 const FLOOR_ALT := Color("#dfc39a")
 const SHELF := Color("#b78b59")
 const SHELF_DARK := Color("#765238")
-const STORAGE := Color("#8dab78")
 const COUNTER := Color("#9d7455")
 const ORDER := Color("#d8a15f")
 const WINDOW := Color("#a7c4cb")
 const ROOM := Rect2(128, 48, 384, 264)
 const TILE: int = 16
+const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
+var player_inventory: Inventory
+@onready var player: Shopkeeper = $Player
+@onready var interactions: InteractionController = $Player/InteractionController
+@onready var storage: ShopStorage = $Storage
+@onready var inventory_ui: InventoryMenu = $InventoryUI
 var fixtures: Array[Rect2] = [
     Rect2(176, 112, 64, 48),
     Rect2(400, 112, 64, 48),
@@ -26,9 +31,26 @@ func _ready() -> void:
     _solid(Rect2(496, 48, 16, 264))
     _solid(Rect2(128, 296, 176, 16))
     _solid(Rect2(336, 296, 176, 16))
-    for fixture in fixtures:
-        _solid(fixture)
+    for index in range(fixtures.size()):
+        if index != 2: # Storage scene owns its collision and appearance.
+            _solid(fixtures[index])
+    player_inventory = Inventory.new(CATALOG, 24)
+    inventory_ui.configure(CATALOG, player_inventory, storage.inventory)
+    storage.interacted.connect(_on_storage_interacted)
+    interactions.target_changed.connect(_on_target_changed)
+    inventory_ui.menu_visibility_changed.connect(_on_menu_visibility_changed)
     queue_redraw()
+
+func _on_storage_interacted(actor: Node2D) -> void:
+    if actor == player:
+        inventory_ui.open_storage()
+
+func _on_target_changed(target: Interactable) -> void:
+    inventory_ui.set_prompt(target.prompt if target != null else "")
+
+func _on_menu_visibility_changed(is_open: bool) -> void:
+    player.controls_enabled = not is_open
+    interactions.enabled = not is_open
 
 func _solid(rect: Rect2) -> void:
     var body := StaticBody2D.new()
@@ -61,7 +83,6 @@ func _draw() -> void:
         draw_line(Vector2(wx + 16, 48), Vector2(wx + 16, 60), WALL, 2)
     _fixture(fixtures[0], SHELF, SHELF_DARK)
     _fixture(fixtures[1], SHELF, SHELF_DARK)
-    _fixture(fixtures[2], STORAGE, SHELF_DARK)
     _fixture(fixtures[3], ORDER, SHELF_DARK)
     _fixture(fixtures[4], COUNTER, SHELF_DARK)
     # Decorative stock in shelves.

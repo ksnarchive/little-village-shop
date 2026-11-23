@@ -17,6 +17,17 @@ window/size/window_height_override=720
 window/stretch/mode="canvas_items"
 window/stretch/scale_mode="integer"
 
+[input]
+
+interact={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":69)]
+}
+inventory={
+"deadzone": 0.5,
+"events": [Object(InputEventKey,"physical_keycode":73)]
+}
+
 [rendering]
 renderer/rendering_method="gl_compatibility"
 renderer/rendering_method.mobile="gl_compatibility"

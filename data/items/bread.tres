@@ -1,0 +1,15 @@
+[gd_resource type="Resource" script_class="ItemData" load_steps=3 format=3]
+
+[ext_resource type="Script" path="res://scripts/item_data.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/items/bread.svg" id="2"]
+
+[resource]
+script = ExtResource("1")
+id = &"bread"
+display_name = "Bread"
+description = "A small loaf with a golden crust."
+icon = ExtResource("2")
+purchase_price = 5
+selling_price = 9
+category = &"bakery"
+max_stack_size = 99

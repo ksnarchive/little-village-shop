@@ -1,5 +1,7 @@
 # Godot 4 generated import cache
 .godot/
+# Godot 4.4+ sidecars are unnecessary for this path-based Godot 4.3 project
+*.gd.uid
 # Local builds and temporary files
 /builds/
 /exports/

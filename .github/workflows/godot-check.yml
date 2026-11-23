@@ -19,7 +19,5 @@ jobs:
           version: 4.3.0
           use-dotnet: false
           cache: true
-      - name: Import project and parse scenes/scripts
-        run: godot --headless --path . --editor --quit
-      - name: Smoke-test main scene
-        run: godot --headless --path . --quit-after 3
+      - name: Import, test inventory and interactions, smoke-test main scene
+        run: bash tests/run_checks.sh

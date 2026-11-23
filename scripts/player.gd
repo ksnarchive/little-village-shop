@@ -1,11 +1,18 @@
+class_name Shopkeeper
 extends CharacterBody2D
 ## Keyboard-controlled shopkeeper. No external art required.
 const SPEED: float = 95.0
 var facing: Vector2 = Vector2.DOWN
 var walking: bool = false
 var step_time: float = 0.0
+var controls_enabled: bool = true
 
 func _physics_process(delta: float) -> void:
+    if not controls_enabled:
+        velocity = Vector2.ZERO
+        walking = false
+        queue_redraw()
+        return
     # Physical keys work on non-English keyboard layouts, too.
     var direction := Vector2(
         float(Input.is_physical_key_pressed(KEY_D) or Input.is_action_pressed("ui_right")) -
