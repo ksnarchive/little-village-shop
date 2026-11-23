@@ -1,8 +1,9 @@
 class_name ShopEconomy
 extends RefCounted
-## Purchases deliver directly to the existing storage inventory.
+## Supplier purchases and atomic one-unit basket sales; all money uses integer coins.
 
 signal balance_changed(new_balance: int)
+signal sales_changed(revenue: int, completed_sales: int)
 
 enum PurchaseResult { SUCCESS, INVALID_PRODUCT, INVALID_QUANTITY, INSUFFICIENT_FUNDS, INSUFFICIENT_SPACE }
 
@@ -13,6 +14,16 @@ var balance: int:
 	get:
 		return _balance
 
+var revenue: int:
+	get:
+		return _revenue
+var completed_sales: int:
+	get:
+		return _completed_sales
+
+var _revenue: int = 0
+var _completed_sales: int = 0
+var _selling: bool = false
 var _catalog: ItemCatalog
 var _storage: Inventory
 var _balance := STARTING_BALANCE
@@ -48,3 +59,30 @@ func buy(item_id: StringName, amount: int) -> PurchaseResult:
 	if cost > 0:
 		balance_changed.emit(_balance)
 	return PurchaseResult.SUCCESS
+
+func can_sell(basket: Inventory, item_id: StringName) -> bool:
+	var item := _catalog.find(item_id)
+	return (not _selling and basket != null and item != null
+		and basket._catalog.find(item_id) == item and basket.total_units() == 1
+		and basket.can_remove(item_id, 1) and item.selling_price >= 0
+		and item.selling_price <= MAX_COINS - _balance
+		and item.selling_price <= MAX_COINS - _revenue
+		and _completed_sales < MAX_COINS)
+
+func sell(basket: Inventory, item_id: StringName) -> bool:
+	if not can_sell(basket, item_id):
+		return false
+	_selling = true
+	var price := _catalog.find(item_id).selling_price
+	# Same commit-before-notify contract as Inventory.transfer_to(). No callbacks,
+	# awaits or fallible mutations between validation and completing all four values.
+	basket._set_quantity(item_id, 0)
+	_balance += price
+	_revenue += price
+	_completed_sales += 1
+	basket.changed.emit()
+	if price > 0:
+		balance_changed.emit(_balance)
+	sales_changed.emit(_revenue, _completed_sales)
+	_selling = false
+	return true

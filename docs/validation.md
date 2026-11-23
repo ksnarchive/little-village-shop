@@ -133,3 +133,47 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   full queues stop arrivals. This short Linux graphical check is not a Windows build,
   touch-input check, or exhaustive resolution sweep. The environment has no audio
   device; Godot used its dummy-audio fallback during the graphical check.
+
+
+## Checkout and sales milestone
+
+- Started from `feat/first-customers` at
+  `63993cf18da4b5569697ec9098f1e9c64d6c5e66`. PR #4 is still open, so this PR
+  targets that branch and contains only checkout changes. No merges to main.
+- Official **Godot 4.3.stable.official.77dcf97d8** passes editor import,
+  **187 inventory/scene/input checks**, **61 customer checks** and **72 checkout checks**
+  (**320 total, zero failures**), followed by the 60-frame main-scene smoke run via
+  `tests/run_checks.sh`. No logged engine/script errors or leaked-resource warnings.
+- New tests purchase four apples (100 → 88 coins), move them through storage → bag →
+  shelf → NPC baskets, serve three villagers at 5 coins each, and verify balance 103,
+  revenue 15, sales 3 and one apple remaining on the shelf. Every physics frame checks
+  tracked goods plus completed sales against demo stock plus purchased units. Milk
+  sales separately verify the catalog selling price of 12 coins.
+- Sale tests cover empty/foreign/multi-unit baskets, unknown or mismatched products,
+  negative and zero prices, balance/revenue/counter overflow, out-of-order customers,
+  stale identities, forced double clicks, and reentrant calls from basket, balance,
+  statistics and queue notifications. Observers see the complete committed transaction;
+  rejected calls preserve money/goods/counters and emit no change notifications.
+- Scene tests use physical E/I/Esc, test counter range/obstruction and the preserved
+  storage approach, modal movement/world-input guards, empty/full queues, session reset,
+  automatically resumed arrivals, and service while another visitor is approaching.
+  They check continuous collision-free paid exits, NPC separation and queue advances,
+  disabled service during transitions, 640×360 panel fit, signal-driven labels, success
+  text and the nonblocking coin effect's cleanup.
+- Checkout deliberately permits the already active visitor, paid exit and queue advance
+  to finish while its panel is open. New arrivals pause. This preserves the bounded
+  one-moving-visitor architecture and prevents a frozen queue or crossing routes; the
+  button becomes ready automatically once movement settles. Other menus keep their
+  existing complete NPC/timer pause behavior.
+- Graphical Linux check with official **Godot 4.3**, Compatibility renderer: used real
+  arrow/E input to take one apple, bread and milk from storage, stock the orchard shelf,
+  and open checkout. Observed the active visitor finish and the service button enable.
+  Clicked **Обслужить** for milk: balance **100 → 112**, revenue **12**, sales **1**,
+  green sale confirmation and pixel coin sparkle; panel advanced to the next apple
+  basket and showed the queue-moving status.
+- [Checkout screenshot](checkout-sale.png) is the real 640×360 game canvas, cropped
+  from the desktop capture and enlarged 2× using nearest-neighbor scaling. No game
+  state or visual elements were added to the image.
+- This is a short Linux graphical check, not a Windows build or exhaustive resolution
+  sweep. No day cycle, game saves or new large systems were added. Balance, goods,
+  customers and sales totals reset on restart. Routes remain authored for this room.
