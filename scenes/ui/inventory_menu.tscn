@@ -1,4 +1,4 @@
-[gd_scene load_steps=5 format=3]
+[gd_scene load_steps=6 format=3]
 
 [ext_resource type="Script" path="res://scripts/inventory_menu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/supplier_menu.tscn" id="2"]
@@ -6,6 +6,8 @@
 [ext_resource type="PackedScene" path="res://scenes/ui/shelf_menu.tscn" id="3"]
 
 [ext_resource type="PackedScene" path="res://scenes/ui/checkout_menu.tscn" id="4"]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/day_report.tscn" id="5"]
 
 [node name="InventoryUI" type="CanvasLayer"]
 script = ExtResource("1")
@@ -22,7 +24,7 @@ mouse_filter = 2
 [node name="Hint" type="Label" parent="Root"]
 unique_name_in_owner = true
 offset_left = 12.0
-offset_top = 8.0
+offset_top = 337.0
 theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
 theme_override_colors/font_shadow_color = Color(0.2, 0.15, 0.1, 1)
 theme_override_constants/shadow_offset_x = 1
@@ -32,7 +34,7 @@ text = "WASD / Arrows  Move    E  Interact    I  Bag"
 [node name="CheckoutStatus" type="Label" parent="Root"]
 unique_name_in_owner = true
 offset_left = 12.0
-offset_top = 29.0
+offset_top = 8.0
 theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
 theme_override_colors/font_shadow_color = Color(0.2, 0.15, 0.1, 1)
 theme_override_constants/shadow_offset_x = 1
@@ -44,7 +46,7 @@ mouse_filter = 2
 [node name="SalesStatus" type="Label" parent="Root"]
 unique_name_in_owner = true
 offset_left = 12.0
-offset_top = 46.0
+offset_top = 25.0
 theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
 theme_override_colors/font_shadow_color = Color(0.2, 0.15, 0.1, 1)
 theme_override_constants/shadow_offset_x = 1
@@ -97,6 +99,31 @@ theme_type_variation = &"BalanceCard"
 [node name="Balance" type="Label" parent="Root/BalanceCard"]
 unique_name_in_owner = true
 layout_mode = 2
+horizontal_alignment = 1
+
+[node name="ClockCard" type="PanelContainer" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 0
+offset_left = 280.0
+offset_top = 8.0
+offset_right = 505.0
+mouse_filter = 2
+theme_type_variation = &"BalanceCard"
+
+[node name="Labels" type="VBoxContainer" parent="Root/ClockCard"]
+layout_mode = 2
+theme_override_constants/separation = 0
+mouse_filter = 2
+
+[node name="Clock" type="Label" parent="Root/ClockCard/Labels"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
+[node name="DayPhase" type="Label" parent="Root/ClockCard/Labels"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
 horizontal_alignment = 1
 
 [node name="Center" type="CenterContainer" parent="Root"]
@@ -159,3 +186,7 @@ layout_mode = 2
 unique_name_in_owner = true
 layout_mode = 2
 text = "Close  [Esc / I]"
+
+[node name="DayReport" parent="Root/Center/Panel/Content" instance=ExtResource("5")]
+unique_name_in_owner = true
+layout_mode = 2

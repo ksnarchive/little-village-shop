@@ -11,6 +11,7 @@ const TILE: int = 16
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
 var player_inventory: Inventory
 var economy: ShopEconomy
+var day: ShopDay
 @onready var player: Shopkeeper = $Player
 @onready var interactions: InteractionController = $Player/InteractionController
 @onready var storage: ShopStorage = $Storage
@@ -46,6 +47,10 @@ func _ready() -> void:
     order_desk.interacted.connect(_on_order_desk_interacted)
     interactions.target_changed.connect(_on_target_changed)
     inventory_ui.menu_visibility_changed.connect(_on_menu_visibility_changed)
+    day = ShopDay.new()
+    add_child(day)
+    day.configure(customers, economy)
+    inventory_ui.configure_day(day)
     queue_redraw()
 
 func _on_checkout_interacted(actor: Node2D) -> void:
@@ -68,6 +73,8 @@ func _on_target_changed(target: Interactable) -> void:
     inventory_ui.set_prompt(target.prompt if target != null else "")
 
 func _on_menu_visibility_changed(is_open: bool) -> void:
+    if day != null:
+        day.paused = is_open
     player.controls_enabled = not is_open
     interactions.enabled = not is_open
     # Checkout lets the active visit, paid departure and queue advance finish. Other menus
