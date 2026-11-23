@@ -108,3 +108,14 @@ func sell(basket: Inventory, item_id: StringName) -> bool:
 	sales_changed.emit(_revenue, _completed_sales)
 	_selling = false
 	return true
+
+func restore_snapshot(data: Dictionary) -> void:
+	# SaveStore validates decimal strings before committing the complete snapshot.
+	_balance = int(data.balance)
+	_revenue = int(data.revenue)
+	_completed_sales = int(data.completed_sales)
+	day_revenue = int(data.day_revenue)
+	day_sales = int(data.day_sales)
+	day_expenses = int(data.day_expenses)
+	_buying = false
+	_selling = false

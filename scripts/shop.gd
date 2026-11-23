@@ -11,6 +11,8 @@ const TILE: int = 16
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
 var player_inventory: Inventory
 var economy: ShopEconomy
+var save_store: SaveStore
+var last_save_message: String = ""
 var day: ShopDay
 @onready var player: Shopkeeper = $Player
 @onready var interactions: InteractionController = $Player/InteractionController
@@ -51,6 +53,9 @@ func _ready() -> void:
     add_child(day)
     day.configure(customers, economy)
     inventory_ui.configure_day(day)
+    inventory_ui.save_requested.connect(save_game)
+    day.day_finished.connect(_autosave_report)
+    day.day_started.connect(save_game)
     queue_redraw()
 
 func _on_checkout_interacted(actor: Node2D) -> void:
@@ -73,6 +78,8 @@ func _on_target_changed(target: Interactable) -> void:
     inventory_ui.set_prompt(target.prompt if target != null else "")
 
 func _on_menu_visibility_changed(is_open: bool) -> void:
+    if inventory_ui.view == InventoryMenu.View.PAUSE:
+        _refresh_save_status()
     if day != null:
         day.paused = is_open
     player.controls_enabled = not is_open
@@ -124,3 +131,23 @@ func _draw() -> void:
 func _fixture(rect: Rect2, color: Color, edge: Color) -> void:
     draw_rect(rect, edge)
     draw_rect(Rect2(rect.position + Vector2(3, 3), rect.size - Vector2(6, 6)), color)
+
+func _refresh_save_status() -> void:
+    inventory_ui.save_notice.text = last_save_message
+    inventory_ui.report_save_status.text = last_save_message if not last_save_message.is_empty() else "Товары и монеты останутся в магазине."
+    var safe := customers.is_empty()
+    inventory_ui.save_button.disabled = not safe or save_store == null
+    inventory_ui.save_status.text = (last_save_message if not last_save_message.is_empty() else
+        "Можно сохранить прогресс. Часы и гости на паузе.") if safe else (
+        "Сначала обслужите всех гостей и дождитесь их выхода. Затем вернитесь в паузу для сохранения.")
+
+func save_game() -> bool:
+    if save_store == null:
+        return false
+    var success := save_store.save_game(self)
+    last_save_message = save_store.message
+    _refresh_save_status()
+    return success
+
+func _autosave_report(_report: Dictionary) -> void:
+    save_game()

@@ -1,6 +1,6 @@
 class_name ShopDay
 extends Node
-## In-memory workday clock. 1.5 game minutes/second = 6m40s plus menus/closing.
+## Workday clock; SaveStore persists validated snapshots. 1.5 game minutes/second = 6m40s plus menus/closing.
 
 signal clock_changed
 signal day_finished(report: Dictionary)
@@ -94,3 +94,17 @@ func start_next_day() -> bool:
 	day_started.emit()
 	_transitioning = false
 	return true
+
+func restore_snapshot(number: int, saved_minute: float, saved_phase: int) -> void:
+	day_number = number
+	minute = saved_minute
+	_transitioning = false
+	_report.clear()
+	_apply_phase()
+	phase = saved_phase as Phase
+	_economy.transactions_enabled = phase != Phase.SUMMARY
+	if phase == Phase.SUMMARY:
+		_report = {"day": day_number, "customers": _economy.day_sales,
+			"revenue": _economy.day_revenue, "expenses": _economy.day_expenses,
+			"profit": _economy.day_revenue - _economy.day_expenses, "balance": _economy.balance}
+	clock_changed.emit()
