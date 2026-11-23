@@ -1,7 +1,9 @@
-[gd_scene load_steps=3 format=3]
+[gd_scene load_steps=4 format=3]
 
 [ext_resource type="Script" path="res://scripts/inventory_menu.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/ui/supplier_menu.tscn" id="2"]
+
+[ext_resource type="PackedScene" path="res://scenes/ui/shelf_menu.tscn" id="3"]
 
 [node name="InventoryUI" type="CanvasLayer"]
 script = ExtResource("1")
@@ -116,6 +118,10 @@ layout_mode = 2
 text = "Visit storage to collect or return goods."
 
 [node name="SupplierMenu" parent="Root/Center/Panel/Content" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
+
+[node name="ShelfMenu" parent="Root/Center/Panel/Content" instance=ExtResource("3")]
 unique_name_in_owner = true
 layout_mode = 2
 

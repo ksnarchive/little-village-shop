@@ -4,7 +4,7 @@ extends CanvasLayer
 
 signal menu_visibility_changed(is_open: bool)
 
-enum View { CLOSED, BAG, STORAGE, SUPPLIER }
+enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF }
 var view: View = View.CLOSED
 var _bag: Inventory
 var _storage: Inventory
@@ -14,6 +14,7 @@ var _prompt_text: String = ""
 @onready var panel: PanelContainer = %Panel
 @onready var inventory_content: VBoxContainer = %InventoryContent
 @onready var supplier_menu: SupplierMenu = %SupplierMenu
+@onready var shelf_menu: ShelfMenu = %ShelfMenu
 @onready var supplier_shade: ColorRect = %SupplierShade
 @onready var balance_card: PanelContainer = %BalanceCard
 @onready var balance_label: Label = %Balance
@@ -68,6 +69,13 @@ func configure_supplier(catalog: ItemCatalog, storage: Inventory, economy: ShopE
 	economy.balance_changed.connect(_update_balance)
 	_update_balance(economy.balance)
 
+func configure_shelves(catalog: ItemCatalog, bag: Inventory) -> void:
+	shelf_menu.configure(catalog, bag)
+
+func open_shelf(shelf: ShopShelf) -> void:
+	shelf_menu.open_shelf(shelf)
+	_open(View.SHELF)
+
 func open_storage() -> void:
 	_open(View.STORAGE)
 
@@ -80,11 +88,14 @@ func open_supplier() -> void:
 
 func _open(next_view: View) -> void:
 	view = next_view
-	inventory_content.visible = view != View.SUPPLIER
+	inventory_content.visible = view in [View.BAG, View.STORAGE]
+	shelf_menu.visible = view == View.SHELF
 	supplier_menu.visible = view == View.SUPPLIER
-	supplier_shade.visible = supplier_menu.visible
-	balance_card.visible = not supplier_menu.visible
-	controls_hint.visible = not supplier_menu.visible
+	var has_shade := view in [View.SUPPLIER, View.SHELF]
+	supplier_shade.visible = has_shade
+	balance_card.visible = not has_shade
+	controls_hint.visible = not has_shade
+	panel.custom_minimum_size.x = 536 if view == View.SHELF else 462
 	panel.show()
 	if inventory_content.visible:
 		message.text = "Move one item at a time." if view == View.STORAGE else "Visit storage to collect or return goods."
@@ -97,6 +108,7 @@ func close_menu() -> void:
 	if view == View.CLOSED:
 		return
 	view = View.CLOSED
+	shelf_menu.release_shelf()
 	panel.hide()
 	supplier_shade.hide()
 	balance_card.show()
@@ -181,6 +193,8 @@ func _apply_theme() -> void:
 	cozy.set_color("font_color", &"QuantityButton", Color("#3d4933"))
 	cozy.set_type_variation(&"OrderButton", &"Button")
 	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#5e704c"), Color("#4a5e3f"), 4))
+	cozy.set_stylebox("background", "ProgressBar", _style(Color("#c6b18a"), Color("#9d7455"), 0))
+	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#82936b"), Color("#61734f"), 0))
 	$Root.theme = cozy
 
 func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:

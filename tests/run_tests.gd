@@ -21,6 +21,8 @@ func _run() -> void:
 	_test_economy()
 	await _test_shop()
 	await _test_supplier()
+	await _test_shelf_inventory()
+	await _test_shelves()
 	print("Little Village Shop: %d checks, %d failures" % [_checks, _failures])
 	quit(0 if _failures == 0 else 1)
 
@@ -342,5 +344,211 @@ func _test_supplier() -> void:
 	await _key(KEY_E)
 	_check(menu.view == InventoryMenu.View.STORAGE and menu.capacity_label.text.contains("60 / 60"),
 		"Existing storage menu sees stock received from supplier")
+	shop.queue_free()
+	await process_frame
+
+func _test_shelf_inventory() -> void:
+	var shelf_scene: PackedScene = load("res://scenes/objects/shelf.tscn")
+	var shelf: ShopShelf = shelf_scene.instantiate()
+	shelf.capacity = 3
+	root.add_child(shelf)
+	var other: ShopShelf = shelf_scene.instantiate()
+	root.add_child(other)
+	var bag := Inventory.new(CATALOG, 4)
+	bag.add(&"apple", 4)
+	var notifications := [0, 0]
+	bag.changed.connect(func() -> void: notifications[0] += 1)
+	shelf.inventory.changed.connect(func() -> void: notifications[1] += 1)
+	_check(shelf.fill_state() == ShopShelf.FillState.EMPTY and shelf.inventory.capacity == 3,
+		"Shelf starts empty with its configured Inventory capacity")
+	var before := bag.serialize()
+	for amount in [-1, 0, 4, 5]:
+		_check(not bag.transfer_to(shelf.inventory, &"apple", amount), "Reject invalid shelf deposit: %d" % amount)
+	_check(not bag.transfer_to(shelf.inventory, &"unknown", 1), "Reject unknown shelf product")
+	_check(bag.serialize() == before and shelf.inventory.total_units() == 0 and notifications == [0, 0],
+		"Rejected shelf transfers preserve both inventories and emit no signals")
+	_check(bag.transfer_to(shelf.inventory, &"apple", 2)
+		and shelf.fill_state() == ShopShelf.FillState.PARTIAL, "Partial deposit changes shelf fill state")
+	_check(bag.transfer_to(shelf.inventory, &"apple", 1)
+		and shelf.fill_state() == ShopShelf.FillState.FULL, "Exact-capacity deposit fills shelf")
+	_check(not bag.transfer_to(shelf.inventory, &"apple", 1), "Full shelf rejects another unit")
+	_check(notifications == [2, 2] and other.inventory.total_units() == 0,
+		"Each shelf has independent stock; successful transfers notify once per side")
+	bag.add(&"bread", 3)
+	_check(not shelf.inventory.transfer_to(bag, &"apple", 1), "Full bag rejects a shelf withdrawal")
+	_check(bag.total_units() == 4 and shelf.inventory.total_units() == 3,
+		"Rejected withdrawal preserves shelf and bag")
+	bag.remove(&"bread", 3)
+	_check(shelf.inventory.transfer_to(bag, &"apple", 3)
+		and shelf.fill_state() == ShopShelf.FillState.EMPTY, "Returning all stock makes shelf empty again")
+	_check(bag.quantity(&"apple") == 4 and not shelf.inventory.transfer_to(bag, &"apple", 1),
+		"Round trip conserves goods and empty shelf cannot supply stock")
+	shelf.queue_free()
+	other.queue_free()
+	var zero: ShopShelf = shelf_scene.instantiate()
+	zero.capacity = 0
+	root.add_child(zero)
+	_check(not bag.transfer_to(zero.inventory, &"apple", 1) and zero.fill_state() == ShopShelf.FillState.EMPTY,
+		"Zero-capacity shelf is safely empty")
+	zero.queue_free()
+
+	var limited_item: ItemData = CATALOG.items[0].duplicate()
+	limited_item.max_stack_size = 2
+	var limited_catalog := ItemCatalog.new()
+	limited_catalog.items.assign([limited_item])
+	var limited_shelf: ShopShelf = shelf_scene.instantiate()
+	limited_shelf.catalog = limited_catalog
+	root.add_child(limited_shelf)
+	var limited_bag := Inventory.new(limited_catalog, 24)
+	limited_shelf.inventory.add(&"apple", 1)
+	limited_bag.add(&"apple", 2)
+	_check(not limited_bag.transfer_to(limited_shelf.inventory, &"apple", 2),
+		"Shelf respects per-product stack limits even when total capacity is free")
+	_check(limited_bag.transfer_to(limited_shelf.inventory, &"apple", 1)
+		and limited_shelf.inventory.quantity(&"apple") == 2, "Exact stack boundary is allowed")
+	limited_shelf.queue_free()
+	await process_frame
+
+func _test_shelves() -> void:
+	var scene: PackedScene = load("res://scenes/main.tscn")
+	var shop := scene.instantiate()
+	root.add_child(shop)
+	await _frames(3)
+	var player: Shopkeeper = shop.get_node("Player")
+	var controller: InteractionController = player.get_node("InteractionController")
+	var left: ShopShelf = shop.get_node("LeftShelf")
+	var right: ShopShelf = shop.get_node("RightShelf")
+	var menu: InventoryMenu = shop.get_node("InventoryUI")
+	var shelf_menu := menu.shelf_menu
+	var bag: Inventory = shop.player_inventory
+	_check(left.inventory != right.inventory and left.inventory.total_units() == 0
+		and right.inventory.total_units() == 0, "Both room shelves start empty with separate inventories")
+	player.position = Vector2(208, 181)
+	Input.action_press("ui_up")
+	await _frames(18)
+	Input.action_release("ui_up")
+	_check(player.position.y >= 165.4 and player.position.y < 181,
+		"Shelf preserves original furniture collision footprint")
+	player.position = Vector2(208, 90)
+	await _frames(3)
+	await _key(KEY_E)
+	_check(menu.view == InventoryMenu.View.CLOSED, "Cannot use shelf from out of interaction range")
+	player.position = Vector2(170, 140)
+	await _frames(3)
+	_check(controller.target == null, "Side approach does not offer shelf interaction")
+	player.position = Vector2(208, 180)
+	await _frames(3)
+	_check(controller.target == left and menu.prompt_label.text == "E  Arrange shelf",
+		"Front of shelf shows the interaction prompt")
+	await _key(KEY_E)
+	_check(menu.view == InventoryMenu.View.SHELF and shelf_menu.is_visible_in_tree()
+		and not menu.inventory_content.visible and not menu.supplier_menu.visible,
+		"Physical E opens only the selected shelf menu")
+	_check(shelf_menu.title.text == "Orchard shelf" and shelf_menu.capacity_label.text.begins_with("Empty"),
+		"Menu names the selected shelf and shows its empty state")
+	_check(not player.controls_enabled and not controller.enabled and menu.prompt_label.text.is_empty(),
+		"Shelf menu blocks movement, interactions and world prompt")
+	var start := player.position
+	Input.action_press("ui_right")
+	await _frames(5)
+	Input.action_release("ui_right")
+	await _key(KEY_E)
+	_check(player.position == start and menu.view == InventoryMenu.View.SHELF,
+		"World movement and repeated E cannot interfere with shelf menu")
+	var row := shelf_menu.rows_container.get_node("apple/Row")
+	var less: Button = row.get_node("Quantity/Less")
+	var more: Button = row.get_node("Quantity/More")
+	var amount: Label = row.get_node("Quantity/Amount")
+	var deposit: Button = row.get_node("Deposit")
+	var take: Button = row.get_node("Take")
+	var stock_label: Label = row.get_node("Details/Stock")
+	_check(shelf_menu.rows_container.get_child_count() == CATALOG.items.size(), "Shelf menu is built from catalog")
+	_check(deposit.disabled and take.disabled and more.disabled and less.disabled,
+		"Empty bag and shelf disable unavailable operations")
+	# Simulate an external stock change while the menu is open.
+	shop.storage.inventory.transfer_to(bag, &"apple", 6)
+	_check(stock_label.text == "Bag 6  ·  Shelf 0" and not deposit.disabled and not more.disabled,
+		"Shelf UI observes the real bag rather than caching stock")
+	more.pressed.emit()
+	more.pressed.emit()
+	less.pressed.emit()
+	_check(amount.text == "2", "Shelf quantity stepper selects two units")
+	deposit.pressed.emit()
+	_check(bag.quantity(&"apple") == 4 and left.inventory.quantity(&"apple") == 2
+		and right.inventory.total_units() == 0, "Stock button deposits selected quantity on only this shelf")
+	_check(left.fill_state() == ShopShelf.FillState.PARTIAL and shelf_menu.fill_meter.value == 2
+		and shelf_menu.capacity_label.text.contains("Shelf 2 / 12") and stock_label.text == "Bag 4  ·  Shelf 2",
+		"Signals update fill meter, state, counts and capacities")
+	take.pressed.emit()
+	_check(bag.quantity(&"apple") == 6 and left.inventory.total_units() == 0,
+		"Take button returns the selected quantity without duplication")
+	for index in range(10):
+		more.pressed.emit()
+	_check(amount.text == "6" and more.disabled, "Quantity cannot exceed available bag stock")
+	deposit.pressed.emit()
+	_check(bag.total_units() == 0 and left.inventory.quantity(&"apple") == 6 and deposit.disabled,
+		"Depositing whole stack empties bag and disables stock button")
+	shop.storage.inventory.transfer_to(bag, &"bread", 4)
+	shop.storage.inventory.transfer_to(bag, &"milk", 3)
+	var bread_row := shelf_menu.rows_container.get_node("bread/Row")
+	for index in range(3):
+		bread_row.get_node("Quantity/More").pressed.emit()
+	bread_row.get_node("Deposit").pressed.emit()
+	var milk_row := shelf_menu.rows_container.get_node("milk/Row")
+	milk_row.get_node("Quantity/More").pressed.emit()
+	_check(milk_row.get_node("Quantity/More").disabled,
+		"Quantity respects remaining shelf space shared across products")
+	milk_row.get_node("Deposit").pressed.emit()
+	_check(left.inventory.total_units() == 12 and left.fill_state() == ShopShelf.FillState.FULL
+		and shelf_menu.capacity_label.text.begins_with("Full") and shelf_menu.fill_meter.value == 12,
+		"Mixed products fill the shelf and update full state")
+	_check(milk_row.get_node("Deposit").disabled and bag.quantity(&"milk") == 1,
+		"Full shelf disables depositing even with goods left in bag")
+	milk_row.get_node("Deposit").pressed.emit()
+	_check(left.inventory.total_units() == 12 and bag.quantity(&"milk") == 1
+		and shelf_menu.message.text.contains("Not enough"), "Stale or forced deposit revalidates atomically")
+	bag.add(&"bread", 23)
+	_check(take.disabled, "Full bag disables taking goods off shelf")
+	var before := left.inventory.serialize()
+	take.pressed.emit()
+	_check(left.inventory.serialize() == before and bag.total_units() == 24,
+		"Forced withdrawal into full bag preserves both inventories")
+	bag.remove(&"bread", 23)
+	_check(not take.disabled and amount.text == "1", "Freeing bag space enables withdrawal with a clamped selection")
+	for index in range(5):
+		more.pressed.emit()
+	take.pressed.emit()
+	_check(left.fill_state() == ShopShelf.FillState.PARTIAL and bag.quantity(&"apple") == 6,
+		"Withdrawing from full shelf returns it to partial state")
+	await _frames(3)
+	_check(menu.panel.get_global_rect().end.x <= root.get_visible_rect().size.x
+		and menu.panel.get_global_rect().end.y <= root.get_visible_rect().size.y
+		and menu.panel.get_global_rect().position.x >= 0
+		and menu.panel.get_global_rect().position.y >= 0, "Shelf panel fits the game's viewport")
+	await _key(KEY_ESCAPE)
+	_check(menu.view == InventoryMenu.View.CLOSED and player.controls_enabled and controller.enabled,
+		"Esc closes shelf menu and restores world controls")
+	deposit.pressed.emit()
+	_check(bag.quantity(&"apple") == 6, "Hidden shelf controls cannot transfer goods")
+	player.position = Vector2(432, 180)
+	await _frames(3)
+	await _key(KEY_E)
+	_check(shelf_menu.title.text == "Pantry shelf" and stock_label.text == "Bag 6  ·  Shelf 0"
+		and amount.text == "1", "Second shelf opens its own stock with reset quantities")
+	_check(not left.inventory.changed.is_connected(shelf_menu._refresh)
+		and right.inventory.changed.is_connected(shelf_menu._refresh), "Switching shelves releases previous stock subscription")
+	deposit.pressed.emit()
+	_check(right.inventory.quantity(&"apple") == 1 and left.inventory.quantity(&"apple") == 0,
+		"Second shelf actions cannot alter the first shelf")
+	menu.close_button.pressed.emit()
+	_check(menu.view == InventoryMenu.View.CLOSED, "Close button dismisses shelf menu")
+	await _key(KEY_E)
+	await _key(KEY_I)
+	_check(menu.view == InventoryMenu.View.CLOSED and not right.inventory.changed.is_connected(shelf_menu._refresh),
+		"I closes shelf menu and detaches its inventory signal")
+	await _key(KEY_I)
+	_check(menu.view == InventoryMenu.View.BAG and not shelf_menu.is_visible_in_tree(), "Bag still opens independently after shelves")
+	_check(shop.economy.balance == 100 and shop.storage.inventory.total_units() == 0,
+		"Shelf movement conserves storage deliveries and never changes coins")
 	shop.queue_free()
 	await process_frame
