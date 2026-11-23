@@ -1,0 +1,25 @@
+name: Godot project checks
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Install Godot 4.3
+        uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          cache: true
+      - name: Import project and parse scenes/scripts
+        run: godot --headless --path . --editor --quit
+      - name: Smoke-test main scene
+        run: godot --headless --path . --quit-after 3
