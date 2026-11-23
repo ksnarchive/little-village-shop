@@ -16,6 +16,7 @@ var economy: ShopEconomy
 @onready var storage: ShopStorage = $Storage
 @onready var order_desk: Interactable = $OrderDesk
 @onready var inventory_ui: InventoryMenu = $InventoryUI
+@onready var customers: CustomerFlow = $Customers
 var fixtures: Array[Rect2] = [
     Rect2(176, 272, 64, 16)
 ]
@@ -34,6 +35,8 @@ func _ready() -> void:
     inventory_ui.configure(CATALOG, player_inventory, storage.inventory)
     inventory_ui.configure_supplier(CATALOG, storage.inventory, economy)
     inventory_ui.configure_shelves(CATALOG, player_inventory)
+    customers.configure(CATALOG, [$LeftShelf, $RightShelf])
+    customers.queue_changed.connect(inventory_ui.set_checkout_waiting)
     for shelf: ShopShelf in [$LeftShelf, $RightShelf]:
         shelf.interacted.connect(_on_shelf_interacted.bind(shelf))
     storage.interacted.connect(_on_storage_interacted)
@@ -60,6 +63,7 @@ func _on_target_changed(target: Interactable) -> void:
 func _on_menu_visibility_changed(is_open: bool) -> void:
     player.controls_enabled = not is_open
     interactions.enabled = not is_open
+    customers.process_mode = Node.PROCESS_MODE_DISABLED if is_open else Node.PROCESS_MODE_INHERIT
 
 func _solid(rect: Rect2) -> void:
     var body := StaticBody2D.new()

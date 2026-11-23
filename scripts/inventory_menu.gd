@@ -25,6 +25,7 @@ var _prompt_text: String = ""
 @onready var message: Label = %Message
 @onready var prompt_label: Label = %Prompt
 @onready var close_button: Button = %Close
+@onready var checkout_label: Label = %CheckoutStatus
 
 func _ready() -> void:
 	_apply_theme()
@@ -88,6 +89,7 @@ func open_supplier() -> void:
 
 func _open(next_view: View) -> void:
 	view = next_view
+	checkout_label.hide()
 	inventory_content.visible = view in [View.BAG, View.STORAGE]
 	shelf_menu.visible = view == View.SHELF
 	supplier_menu.visible = view == View.SUPPLIER
@@ -108,6 +110,7 @@ func close_menu() -> void:
 	if view == View.CLOSED:
 		return
 	view = View.CLOSED
+	checkout_label.show()
 	shelf_menu.release_shelf()
 	panel.hide()
 	supplier_shade.hide()
@@ -120,6 +123,9 @@ func close_menu() -> void:
 func set_prompt(text: String) -> void:
 	_prompt_text = text
 	prompt_label.text = text if view == View.CLOSED else ""
+
+func set_checkout_waiting(waiting: int) -> void:
+	checkout_label.text = "Checkout: %d / 3 waiting · Service coming later" % waiting
 
 func _update_balance(coins: int) -> void:
 	balance_label.text = "%d coins" % coins

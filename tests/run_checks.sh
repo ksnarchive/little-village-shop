@@ -16,4 +16,5 @@ run_checked() {
 
 run_checked --headless --path . --editor --quit
 run_checked --headless --path . --script res://tests/run_tests.gd
+run_checked --headless --path . --fixed-fps 60 --script res://tests/run_customer_tests.gd
 run_checked --headless --path . --quit-after 60
