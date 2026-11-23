@@ -17,10 +17,20 @@ A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Wi
 - The shop starts with **100 coins**. The HUD and supplier panel show the current balance.
   Each order delivers one product directly to storage when there are enough coins and the
   full quantity fits. The panel updates the balance and storage after the delivery.
+- **E** at the front of either wooden shelf opens its restocking menu. Collect goods from
+  storage into your bag first, select a product row and quantity with **− / +**, then choose
+  **Stock** to place goods or **Take** to return them to your bag.
+- The shelf menu shows its name, fill meter, total capacity and per-product counts on both
+  sides. Buttons respect available stock, shared capacity and product stack limits; no partial
+  transfers occur. Esc, I or Close dismisses the menu and restores movement.
+- Empty, partly stocked and full shelves look different in the room: product icons gradually
+  fill the two tiers and a small stock meter tracks total occupancy. Each shelf keeps its
+  own stock when the menu closes; restarting resets both shelves.
 
 The bag starts empty (24-unit capacity). Storage holds 6 apples, 4 bread and 3 milk
 (60-unit capacity) as **free demo stock**. Restarting resets inventory and balance.
-Shelves and checkout remain decorative collision objects.
+Both shelves start empty, each with its own **12-unit capacity** shared across products.
+The checkout remains decorative.
 
 ## Run
 
@@ -40,6 +50,8 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/inventory.gd` | UI-independent quantities, capacity, atomic transfers, notifications and serialization |
 | `scripts/storage.gd`, `scenes/objects/storage.tscn` | Reusable storage, initial stock and its original collision footprint |
 | `scripts/order_desk.gd`, `scenes/objects/order_desk.tscn` | Order desk appearance, collision and interaction point |
+| `scripts/shelf.gd`, `scenes/objects/shelf.tscn` | Reusable shelf, independent Inventory, original collision footprint and stock-driven pixel art |
+| `scripts/shelf_menu.gd`, `scenes/ui/shelf_menu.tscn` | Quantity selection and validated bag ↔ shelf transfers in the shared modal UI |
 | `scripts/shop_economy.gd` | Balance and validated supplier purchases |
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
@@ -57,6 +69,13 @@ These are inventory serialization primitives, **not a game save/load system**.
 To add a product, create an `ItemData` resource and add it to `data/item_catalog.tres`.
 The bag and storage menus build rows from this catalog without product-specific logic.
 The supplier builds its rows from the same catalog and uses each product's purchase price.
+Shelf menus and world icons also use this catalog. A shelf owns an `Inventory`; the UI calls
+`transfer_to()` in either direction, and stock signals refresh the menu and redraw the fixture.
+Configure `capacity` and `display_name` on each instance of `scenes/objects/shelf.tscn`.
+Shelf capacity is shared across all products, with no extra product/category restriction.
+The six visible product positions represent occupancy, rather than a one-icon-per-unit count.
+
+Shelf previews: [restocking menu](docs/shelf-menu.png) · [stocked shelf in the room](docs/shelf-stock.png).
 
 ## Automated validation
 
@@ -72,7 +91,9 @@ The runner fails on logged engine/script errors as well as nonzero exit codes. I
 product data, negative/unknown quantities, capacity and stack limits, atomic transfers,
 notifications, JSON round-trips, malformed restores, real scene instantiation, movement,
 wall/furniture collisions, range/obstruction, physical E/I/Esc input, movement blocking,
-successful and rejected supplier orders, and balance and stock updates.
+successful and rejected supplier orders, balance and stock updates, and shelf deposits and
+withdrawals, mixed-product capacity, independent shelf inventories, fill-state transitions,
+full-bag rejection, quantity clamping, modal controls and viewport fit.
 A main-scene smoke run follows the tests.
 
 Headless results do not establish visual quality or Windows compatibility. See
@@ -80,10 +101,9 @@ Headless results do not establish visual quality or Windows compatibility. See
 
 ## Next milestones
 
-1. Shelf restocking.
-2. Customer navigation/FSM and checkout queue.
-3. Day cycle, reports and versioned game saves.
-4. Original art/audio, broader desktop testing and Windows export.
+1. Customer navigation/FSM and checkout queue.
+2. Day cycle, reports and versioned game saves.
+3. Original art/audio, broader desktop testing and Windows export.
 
 The current procedural room is preserved; no village, customer or checkout systems have been added.
 All current graphics are original project placeholders; no commercial game assets are used.
