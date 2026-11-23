@@ -1,6 +1,7 @@
 /* Browser integration against the real release export; no game/debug hooks. */
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
+const path = require('node:path');
 const {chromium, webkit} = require('playwright');
 const url = process.env.GAME_URL || 'http://127.0.0.1:8060/';
 const output = process.env.CAPTURE_DIR || '../builds/browser-checks';
@@ -34,6 +35,48 @@ async function check(name) {
       const b = await page.locator(`[data-code="${code}"]`).boundingBox();
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
       await page.mouse.down(); await wait(ms); await page.mouse.up(); await wait(150);
+    };
+    const atlas = await fs.readFile(path.join(__dirname, '../assets/characters/villagers.png'), 'base64');
+    // Observe rendered pixels: fixed walk durations drift on slower CI machines.
+    // This reads the actual sprite, without reading or changing gameplay state.
+    const playerPosition = () => page.evaluate(async atlas => {
+      async function pixels(url) {
+        const img = new Image(); img.src = url; await img.decode();
+        const surface = document.createElement('canvas');
+        surface.width = img.width; surface.height = img.height;
+        const ctx = surface.getContext('2d'); ctx.drawImage(img, 0, 0);
+        return ctx.getImageData(0, 0, img.width, img.height);
+      }
+      const source = await pixels('data:image/png;base64,' + atlas);
+      const frame = await pixels(document.getElementById('canvas').toDataURL());
+      for (let pose = 0; pose < 12; pose++) {
+        const samples = [];
+        for (let y = 0; y < 32; y += 2) for (let x = 0; x < 24; x += 2) {
+          const i = (y * source.width + pose * 24 + x) * 4;
+          if (source.data[i + 3] === 255) samples.push([x, y, ...source.data.slice(i, i + 3)]);
+        }
+        for (let top = 70; top < 285; top++) for (let left = 140; left < 490; left++) {
+          let match = true;
+          for (const [x, y, r, g, b] of samples) {
+            const i = ((top + y) * frame.width + left + x) * 4;
+            if (frame.data[i] !== r || frame.data[i + 1] !== g || frame.data[i + 2] !== b) { match = false; break; }
+          }
+          if (match) return {x: left + 12, y: top + 20};
+        }
+      }
+      throw new Error('Shopkeeper sprite not visible in the rendered world');
+    }, atlas);
+    const walkTo = async (x, y) => {
+      for (let attempt = 0; attempt < 24; attempt++) {
+        const position = await playerPosition();
+        const dx = x - position.x, dy = y - position.y;
+        if (Math.abs(dx) <= 4 && Math.abs(dy) <= 4) return;
+        const horizontal = Math.abs(dx) > Math.abs(dy);
+        const distance = horizontal ? dx : dy;
+        await hold(horizontal ? (dx > 0 ? 'ArrowRight' : 'ArrowLeft') : (dy > 0 ? 'ArrowDown' : 'ArrowUp'),
+          Math.max(40, Math.min(350, Math.abs(distance) / 95 * 1000)));
+      }
+      throw new Error(`Cannot reach (${x}, ${y}); sprite at ${JSON.stringify(await playerPosition())}`);
     };
     const start = async () => {
       await page.locator('#start').tap();
@@ -70,16 +113,16 @@ async function check(name) {
     await start(); await tap(320, 260); // New game, fresh isolated browser context.
     await awaitSave(data => data.economy.balance === '100');
     await action('KeyI'); await capture('bag'); await action('KeyI');
-    await hold('ArrowDown', 240); await hold('ArrowRight', 1000); await action('KeyE');
+    await walkTo(320, 255); await walkTo(424, 255); await action('KeyE');
     await tap(500, 124); // Order one apple: 100 -> 97.
     await capture('supplier'); await action('Escape');
-    await hold('ArrowLeft', 2000); await action('KeyE');
+    await walkTo(208, 255); await action('KeyE');
     for (let count = 0; count < 3; count++) await tap(444, 122);
     await capture('storage'); await action('Escape');
-    await hold('ArrowRight', 1000); await hold('ArrowUp', 800); await hold('ArrowLeft', 1100);
+    await walkTo(320, 255); await walkTo(320, 180); await walkTo(208, 180);
     await action('KeyE'); await tap(464, 133); // Stock one apple, keep two in the bag.
     await capture('shelf'); await action('Escape');
-    await hold('ArrowRight', 1100); await hold('ArrowDown', 950); await hold('ArrowLeft', 780);
+    await walkTo(320, 180); await walkTo(320, 260); await walkTo(246, 260);
     await capture('interior');
     // Let the real clock reach 09:00 and the first real visitor reach the counter.
     await wait(45000);
