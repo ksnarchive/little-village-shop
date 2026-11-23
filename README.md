@@ -2,9 +2,34 @@
 
 A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows.
 
+## Cozy shop makeover (stage 8)
+
+![Updated shop with stocked shelves and three villagers](docs/stage-8-stocked-customers.png)
+
+Original pixel art made specifically for this project: staggered wooden floorboards,
+wood trim, curtained windows, brass lamps, paper signs, a botanical picture, small plants
+and woven rugs. Shelves have recessed wooden tiers and price tags; the sage stock chest,
+linen-covered supplier desk and checkout register share the same warm, muted palette.
+Apples, scored bread and capped milk bottles use clear 16×16 silhouettes. The shopkeeper
+and three villagers share a four-direction atlas with idle and two walking frames.
+
+The room, furniture positions, collision shapes, NPC routes and all existing mechanics
+are retained. A fixed room camera keeps the entire interior visible while walking.
+The compact clock card leaves the north wall visible. Window light accents and stepped
+shadows are baked into the original art, compatible with Godot 4.3's Compatibility renderer.
+Nearest filtering, lossless textures without mipmaps, integer scaling and snapped render
+transforms keep pixels crisp; movement/physics remain continuous. Bag icons use native
+16px display, other product cards use 32px (2×).
+
+Real Godot 4.3 window captures: [whole shop](docs/stage-8-shop-overview.png) ·
+[stock and customers](docs/stage-8-stocked-customers.png) ·
+[storage interface](docs/stage-8-storage-menu.png). These are unmodified 1280×720 rendered
+frames at 2×, not mockups. Previous milestone images below document their older builds.
+See [art sources and regeneration](assets/README.md) and [validation](docs/validation.md#stage-8--visual-shop-makeover).
+
 ## Playable slice
 
-- Existing procedural shop, shopkeeper, idle/walking poses, walls and furniture collisions.
+- Original pixel-art shop, shopkeeper, directional idle/walking poses, walls and furniture collisions.
 - Physical **WASD** (including alternate keyboard layouts) or **arrow keys** to move.
 - **E** near the front of the green storage chest opens its inventory. A contextual prompt
   appears within 36 pixels of the interaction point; walls/furniture block the interaction ray.
@@ -131,7 +156,7 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 
 | Files | Responsibility |
 | --- | --- |
-| `scripts/player.gd`, `scenes/characters/player.tscn` | Existing CharacterBody2D movement and procedural character |
+| `scripts/player.gd`, `scenes/characters/player.tscn`, `scripts/villager_art.gd` | Existing CharacterBody2D movement and shared directional pixel-art atlas |
 | `scripts/start_menu.gd`, `scenes/start.tscn`, `scripts/save_store.gd` | Application entry, title/confirmation menu and validated single-slot persistence |
 | `scripts/shop.gd`, `scenes/main.tscn` | Existing room and small composition/wiring layer |
 | `scripts/interactable.gd` | Group-based endpoint, prompt, interaction position and actor signal |
@@ -149,7 +174,7 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/checkout_menu.gd`, `scenes/ui/checkout_menu.tscn`, `scripts/coin_effect.gd` | First-customer service panel, sale feedback and transient pixel coins |
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
-| `assets/items/` | Original SVG icons composed on a 16×16 pixel grid |
+| `assets/items/`, `assets/shop/`, `assets/characters/`, `tools/build_shop_art.py` | Original native-grid PNG art and reproducible optional authoring script |
 | `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_day_tests.gd`, `tests/run_save_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
 
 Inventory capacity counts **total units**, not slots. Each product has one stack limited by
@@ -239,7 +264,7 @@ Headless results do not establish visual quality or Windows compatibility. See
 
 ## Next milestones
 
-1. Original art/audio, broader desktop testing and Windows export.
+1. Audio, broader desktop testing and Windows export.
 
-The current procedural room is preserved; village expansion remains future work.
-All current graphics are original project placeholders; no commercial game assets are used.
+The current room and its mechanics are preserved; village expansion remains future work.
+All graphics are original project art; no commercial game sprites or third-party asset packs are used.

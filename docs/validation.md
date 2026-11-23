@@ -268,3 +268,53 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   not migrated. Temp/backup/atomic rename protect against checked I/O failures and interrupted
   replacement; Godot FileAccess does not expose a portable directory-fsync guarantee for
   sudden power loss. Windows runtime/export and touch/gamepad remain unverified.
+
+## Stage 8 — visual shop makeover
+
+- Started from merged `main` at `c3ffe7b0e638a06780a2fc1715b7d4fd1ae7d32f`
+  (PRs #1–#7), rechecked against the remote before publishing. Separate branch:
+  `stage-8-cozy-shop`. The original project and architecture are reused.
+- Created nine original native-grid PNG textures with committed, reproducible
+  [authoring source](../tools/build_shop_art.py): room/floor/walls, four fixtures,
+  three products and a coordinated villager atlas. No third-party game art or fonts.
+  See [art notes](../assets/README.md) for palette, dimensions, atlas and regeneration.
+- Furniture scene transforms, collision shapes, room solids, interaction offsets,
+  capacities, customer routes, speeds and transaction/save logic remain unchanged.
+  The camera is now fixed at (320,180) so the full room remains visible when walking.
+  The top clock card is compact enough to clear the north wall. Added two regression
+  checks for whole-room framing at spawn and after real player movement.
+- Official **Godot 4.3.stable.official.77dcf97d8**, `tests/run_checks.sh`: editor import,
+  **189 inventory/scene/input + 61 customer + 72 checkout + 80 day + 127 save checks**
+  (**529 total, zero failures**), followed by the 60-frame startup-menu smoke run.
+  No logged engine/script errors or resource-leak warnings in the final complete runner.
+  This retains the existing three-workday and save-failure/recovery coverage.
+- Graphical Linux rendering uses the same official Godot 4.3, **Compatibility / Mesa
+  llvmpipe**. Opened the real application menu and New Game on the shared desktop and
+  inspected the room. After that desktop session disconnected, final reproducible
+  captures used a separate native Xorg dummy display and the committed
+  [graphical review runner](../tools/capture_shop.gd), not Godot's headless renderer.
+- Real, unmodified **1280×720 game-window viewport captures**, native 640×360 canvas
+  at integer **2×**: [whole shop](stage-8-shop-overview.png),
+  [stocked shelves and three customers](stage-8-stocked-customers.png),
+  [storage UI](stage-8-storage-menu.png). No post-processing, compositing, invented
+  visual elements or screenshot enlargement. Inspected the final images for whole-room
+  framing, readable goods/stock indicators, three distinct villagers, clear approaches
+  and UI fit. Older screenshots elsewhere in this document belong to earlier stages.
+- The capture runner freezes the clock at 08:00 for the overview, then uses production
+  purchases (2 apples, 4 bread, 5 milk; **61 coins**), transfers the existing demo stock
+  plus deliveries through storage → bag → both shelves (4 of each product per shelf),
+  sets the review clock to noon and waits for three normal physics-driven visits.
+  Final balance is **39**, queue **3/3**, revenue/sales **0**; three unpaid units are in
+  NPC baskets, with the remaining 21 on shelves. No save file is read or written.
+- Verified regeneration produces identical hashes for all nine PNGs. In both final
+  world captures, the interior art below the HUD repeats exactly on the 2× pixel grid
+  (compared native downsample/repeat bytes); UI text retains Godot font rasterization.
+- Nearest filtering and integer scaling retained; lossless PNG import has no mipmaps.
+  Transform snapping only affects rendering. Product UI icons are 16px/32px, never
+  fractional 20px. Four directions and idle/two walk frames share a single 24×32 grid.
+  Stepped fixture shadows and window light accents are authored in the art and work
+  in Compatibility without dynamic light or shader requirements. Decor adds no solids.
+- Runtime limits: Linux graphical check, not Windows export or exhaustive hardware/
+  resolution testing. Dummy audio is used on this machine. Mesa reports unsupported
+  V-Sync switching; this environment warning does not prevent rendering or capture.
+  No new mechanics, locations, audio, save schema or migration were introduced.
