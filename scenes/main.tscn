@@ -17,7 +17,8 @@ script = ExtResource("1")
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(320, 222)
 
-[node name="Camera2D" type="Camera2D" parent="Player"]
+[node name="Camera2D" type="Camera2D" parent="."]
+position = Vector2(320, 180)
 enabled = true
 
 [node name="Storage" parent="." instance=ExtResource("3")]

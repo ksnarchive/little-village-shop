@@ -56,7 +56,7 @@ func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void
 		row.add_theme_constant_override("separation", 8)
 		var icon := TextureRect.new()
 		icon.texture = item.icon
-		icon.custom_minimum_size = Vector2(20, 20)
+		icon.custom_minimum_size = Vector2(16, 16)
 		icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 		icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 		row.add_child(icon)
@@ -294,8 +294,9 @@ static func cozy_theme() -> Theme:
 	cozy.set_color("font_color", "Button", Color("#fff2d7"))
 	cozy.set_color("font_hover_color", "Button", Color("#513a31"))
 	cozy.set_color("font_disabled_color", "Button", Color("#847764"))
-	for variation in [&"BalanceCard", &"OrderHeader", &"OrderRow"]:
+	for variation in [&"BalanceCard", &"ClockCard", &"OrderHeader", &"OrderRow"]:
 		cozy.set_type_variation(variation, &"PanelContainer")
+	cozy.set_stylebox("panel", &"ClockCard", _style(Color("#f5e4bd"), Color("#765238"), 0))
 	cozy.set_stylebox("panel", &"BalanceCard", _style(Color("#f5e4bd"), Color("#765238"), 5))
 	cozy.set_stylebox("panel", &"OrderHeader", _style(Color("#d9dfbc"), Color("#9aa779"), 8))
 	cozy.set_stylebox("panel", &"OrderRow", _style(Color("#fff0cf"), Color("#dcc39a"), 6))
@@ -313,6 +314,10 @@ static func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
 	style.bg_color = fill
 	style.border_color = border
 	style.set_border_width_all(2)
+	style.anti_aliasing = false
+	style.shadow_color = Color("#493e3038")
+	style.shadow_size = 2
+	style.shadow_offset = Vector2(0, 2)
 	style.content_margin_left = padding
 	style.content_margin_right = padding
 	style.content_margin_top = padding

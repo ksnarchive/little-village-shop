@@ -185,6 +185,9 @@ func _test_shop() -> void:
 	var storage: ShopStorage = shop.get_node("Storage")
 	var menu: InventoryMenu = shop.get_node("InventoryUI")
 	_check(player is CharacterBody2D, "Existing player scene instantiates")
+	var camera: Camera2D = shop.get_node("Camera2D")
+	var framing := camera.get_screen_center_position()
+	_check(framing == Vector2(320, 180), "Camera frames the whole original room at spawn")
 	_check(storage.inventory.total_units() == 13, "Storage has demo stock")
 	controller.refresh_target()
 	_check(controller.target == null, "Storage out of range from spawn")
@@ -195,6 +198,8 @@ func _test_shop() -> void:
 	await _frames(8)
 	Input.action_release("ui_right")
 	_check(player.position.x > start.x, "Arrow movement remains functional")
+	_check(camera.get_screen_center_position() == framing,
+		"Moving the shopkeeper keeps the north wall and doorway in frame")
 	start = player.position
 	var physical := InputEventKey.new()
 	physical.physical_keycode = KEY_D

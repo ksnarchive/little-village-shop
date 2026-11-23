@@ -21,12 +21,7 @@ func fill_state() -> FillState:
 	return FillState.FULL if inventory.total_units() == inventory.capacity else FillState.PARTIAL
 
 func _draw() -> void:
-	# Keep the original 64x48 footprint and wood palette, on whole pixels.
-	draw_rect(Rect2(-32, -24, 64, 48), Color("#765238"))
-	draw_rect(Rect2(-29, -21, 58, 42), Color("#b78b59"))
-	for y in [-20, 0]:
-		draw_rect(Rect2(-27, y, 54, 17), Color("#9d7455"))
-		draw_rect(Rect2(-27, y + 16, 54, 3), Color("#d8a15f"))
+	draw_texture(preload("res://assets/shop/shelf.png"), Vector2(-32, -24))
 	if inventory == null:
 		return
 	var total := inventory.total_units()

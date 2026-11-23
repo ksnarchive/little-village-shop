@@ -6,9 +6,7 @@ enum State { ENTERING, SEARCHING, MOVING_TO_SHELF, MOVING_TO_CHECKOUT, WAITING_A
 signal state_changed(next_state: State)
 
 const SPEED: float = 46.0
-const COATS: Array[Color] = [Color("#a8664e"), Color("#879bb0"), Color("#b49a58")]
-const HAIR: Array[Color] = [Color("#6a4936"), Color("#d4c5aa"), Color("#49382d")]
-const SKIN: Array[Color] = [Color("#e8b88f"), Color("#bd8b68"), Color("#edc8a4")]
+const APPEARANCE_COUNT: int = 3
 
 var state: State = State.ENTERING
 var basket: Inventory
@@ -26,7 +24,7 @@ var _step: float = 0.0
 func configure(flow: CustomerFlow, catalog: ItemCatalog, variant: int) -> void:
 	_flow = flow
 	_catalog = catalog
-	appearance = posmod(variant, COATS.size())
+	appearance = posmod(variant, APPEARANCE_COUNT)
 	basket = Inventory.new(catalog, 1)
 
 func start_visit() -> void:
@@ -133,32 +131,13 @@ func advance_in_queue(slot: int) -> void:
 	_set_state(State.ADVANCING_IN_QUEUE)
 
 func _draw() -> void:
-	# Same tiny, whole-pixel silhouette and warm palette as the shopkeeper.
-	draw_rect(Rect2(-7, 8, 14, 3), Color(0.2, 0.15, 0.1, 0.22))
-	var bob := 1 if walking and sin(_step) > 0.0 else 0
-	draw_rect(Rect2(-5, 5 + bob, 4, 5), Color("#4e4139"))
-	draw_rect(Rect2(1, 5 - bob, 4, 5), Color("#4e4139"))
-	draw_rect(Rect2(-7, -4, 14, 11), COATS[appearance])
-	draw_rect(Rect2(-4, -3, 8, 9), Color("#eddbb5"))
-	draw_rect(Rect2(-8, -2, 2, 7), COATS[appearance].darkened(0.12))
-	draw_rect(Rect2(6, -2, 2, 7), COATS[appearance].darkened(0.12))
-	draw_rect(Rect2(-5, -12, 10, 10), SKIN[appearance])
-	draw_rect(Rect2(-6, -14, 12, 5), HAIR[appearance])
-	draw_rect(Rect2(-6, -11, 3, 5), HAIR[appearance])
-	if appearance == 0:
-		draw_rect(Rect2(-8, -13, 16, 2), Color("#c9ae70"))
-		draw_rect(Rect2(-5, -17, 10, 4), Color("#d8bf86"))
-	elif appearance == 1:
-		draw_rect(Rect2(3, -11, 3, 7), HAIR[appearance])
-	else:
-		draw_rect(Rect2(-6, -15, 12, 3), COATS[appearance].darkened(0.15))
-	if facing.y >= -0.3:
-		draw_rect(Rect2(-3, -7, 2, 2), Color("#49382d"))
-		draw_rect(Rect2(2, -7, 2, 2), Color("#49382d"))
-		draw_rect(Rect2(-4, -4, 2, 1), Color("#cf947d"))
+	VillagerArt.draw_actor(self, appearance + 1, facing, walking, _step)
 	if basket != null and basket.total_units() > 0:
 		draw_rect(Rect2(5, 1, 9, 8), Color("#765238"))
 		draw_rect(Rect2(6, 3, 7, 5), Color("#b78b59"))
+		draw_rect(Rect2(7, 4, 5, 1), Color("#d1ae76"))
+		draw_rect(Rect2(8, 3, 1, 5), Color("#947043"))
+		draw_rect(Rect2(11, 3, 1, 5), Color("#947043"))
 	# A catalog icon in a cream thought bubble shows held goods / waiting clearly.
 	if state == State.WAITING_AT_CHECKOUT or (basket != null and basket.total_units() > 0):
 		draw_rect(Rect2(-11, -40, 22, 21), Color("#765238"))
