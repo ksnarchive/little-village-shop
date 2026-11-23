@@ -6,21 +6,20 @@ const FLOOR_ALT := Color("#dfc39a")
 const SHELF := Color("#b78b59")
 const SHELF_DARK := Color("#765238")
 const COUNTER := Color("#9d7455")
-const ORDER := Color("#d8a15f")
 const WINDOW := Color("#a7c4cb")
 const ROOM := Rect2(128, 48, 384, 264)
 const TILE: int = 16
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
 var player_inventory: Inventory
+var economy: ShopEconomy
 @onready var player: Shopkeeper = $Player
 @onready var interactions: InteractionController = $Player/InteractionController
 @onready var storage: ShopStorage = $Storage
+@onready var order_desk: Interactable = $OrderDesk
 @onready var inventory_ui: InventoryMenu = $InventoryUI
 var fixtures: Array[Rect2] = [
     Rect2(176, 112, 64, 48),
     Rect2(400, 112, 64, 48),
-    Rect2(176, 208, 64, 32),
-    Rect2(400, 208, 48, 32),
     Rect2(176, 272, 64, 16)
 ]
 
@@ -31,12 +30,14 @@ func _ready() -> void:
     _solid(Rect2(496, 48, 16, 264))
     _solid(Rect2(128, 296, 176, 16))
     _solid(Rect2(336, 296, 176, 16))
-    for index in range(fixtures.size()):
-        if index != 2: # Storage scene owns its collision and appearance.
-            _solid(fixtures[index])
+    for fixture in fixtures:
+        _solid(fixture)
     player_inventory = Inventory.new(CATALOG, 24)
+    economy = ShopEconomy.new(CATALOG, storage.inventory)
     inventory_ui.configure(CATALOG, player_inventory, storage.inventory)
+    inventory_ui.configure_supplier(CATALOG, storage.inventory, economy)
     storage.interacted.connect(_on_storage_interacted)
+    order_desk.interacted.connect(_on_order_desk_interacted)
     interactions.target_changed.connect(_on_target_changed)
     inventory_ui.menu_visibility_changed.connect(_on_menu_visibility_changed)
     queue_redraw()
@@ -44,6 +45,10 @@ func _ready() -> void:
 func _on_storage_interacted(actor: Node2D) -> void:
     if actor == player:
         inventory_ui.open_storage()
+
+func _on_order_desk_interacted(actor: Node2D) -> void:
+    if actor == player:
+        inventory_ui.open_supplier()
 
 func _on_target_changed(target: Interactable) -> void:
     inventory_ui.set_prompt(target.prompt if target != null else "")
@@ -83,8 +88,7 @@ func _draw() -> void:
         draw_line(Vector2(wx + 16, 48), Vector2(wx + 16, 60), WALL, 2)
     _fixture(fixtures[0], SHELF, SHELF_DARK)
     _fixture(fixtures[1], SHELF, SHELF_DARK)
-    _fixture(fixtures[3], ORDER, SHELF_DARK)
-    _fixture(fixtures[4], COUNTER, SHELF_DARK)
+    _fixture(fixtures[2], COUNTER, SHELF_DARK)
     # Decorative stock in shelves.
     for x in [184, 200, 216, 408, 424, 440]:
         draw_circle(Vector2(x, 126), 5, Color("#b7654e"))
