@@ -1,10 +1,10 @@
 class_name InventoryMenu
 extends CanvasLayer
-## Inventory view only; all stock rules live in Inventory.
+## Routes the shop's modal views and shows the world HUD.
 
 signal menu_visibility_changed(is_open: bool)
 
-enum View { CLOSED, BAG, STORAGE }
+enum View { CLOSED, BAG, STORAGE, SUPPLIER }
 var view: View = View.CLOSED
 var _bag: Inventory
 var _storage: Inventory
@@ -12,6 +12,12 @@ var _rows: Dictionary = {}
 var _prompt_text: String = ""
 
 @onready var panel: PanelContainer = %Panel
+@onready var inventory_content: VBoxContainer = %InventoryContent
+@onready var supplier_menu: SupplierMenu = %SupplierMenu
+@onready var supplier_shade: ColorRect = %SupplierShade
+@onready var balance_card: PanelContainer = %BalanceCard
+@onready var balance_label: Label = %Balance
+@onready var controls_hint: Label = %Hint
 @onready var title: Label = %Title
 @onready var capacity_label: Label = %Capacity
 @onready var rows_container: VBoxContainer = %Rows
@@ -57,17 +63,32 @@ func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void
 	_storage.changed.connect(_refresh)
 	_refresh()
 
+func configure_supplier(catalog: ItemCatalog, storage: Inventory, economy: ShopEconomy) -> void:
+	supplier_menu.configure(catalog, storage, economy)
+	economy.balance_changed.connect(_update_balance)
+	_update_balance(economy.balance)
+
 func open_storage() -> void:
 	_open(View.STORAGE)
 
 func open_inventory() -> void:
 	_open(View.BAG)
 
+func open_supplier() -> void:
+	supplier_menu.reset_order()
+	_open(View.SUPPLIER)
+
 func _open(next_view: View) -> void:
 	view = next_view
+	inventory_content.visible = view != View.SUPPLIER
+	supplier_menu.visible = view == View.SUPPLIER
+	supplier_shade.visible = supplier_menu.visible
+	balance_card.visible = not supplier_menu.visible
+	controls_hint.visible = not supplier_menu.visible
 	panel.show()
-	message.text = "Move one item at a time." if view == View.STORAGE else "Visit storage to collect or return goods."
-	_refresh()
+	if inventory_content.visible:
+		message.text = "Move one item at a time." if view == View.STORAGE else "Visit storage to collect or return goods."
+		_refresh()
 	close_button.grab_focus()
 	menu_visibility_changed.emit(true)
 	set_prompt(_prompt_text)
@@ -77,6 +98,9 @@ func close_menu() -> void:
 		return
 	view = View.CLOSED
 	panel.hide()
+	supplier_shade.hide()
+	balance_card.show()
+	controls_hint.show()
 	close_button.release_focus()
 	menu_visibility_changed.emit(false)
 	set_prompt(_prompt_text)
@@ -84,6 +108,10 @@ func close_menu() -> void:
 func set_prompt(text: String) -> void:
 	_prompt_text = text
 	prompt_label.text = text if view == View.CLOSED else ""
+
+func _update_balance(coins: int) -> void:
+	balance_label.text = "%d coins" % coins
+	supplier_menu.balance_label.text = balance_label.text
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event.is_echo():
@@ -143,6 +171,16 @@ func _apply_theme() -> void:
 	cozy.set_color("font_color", "Button", Color("#fff2d7"))
 	cozy.set_color("font_hover_color", "Button", Color("#513a31"))
 	cozy.set_color("font_disabled_color", "Button", Color("#847764"))
+	for variation in [&"BalanceCard", &"OrderHeader", &"OrderRow"]:
+		cozy.set_type_variation(variation, &"PanelContainer")
+	cozy.set_stylebox("panel", &"BalanceCard", _style(Color("#f5e4bd"), Color("#765238"), 5))
+	cozy.set_stylebox("panel", &"OrderHeader", _style(Color("#d9dfbc"), Color("#9aa779"), 8))
+	cozy.set_stylebox("panel", &"OrderRow", _style(Color("#fff0cf"), Color("#dcc39a"), 6))
+	cozy.set_type_variation(&"QuantityButton", &"Button")
+	cozy.set_stylebox("normal", &"QuantityButton", _style(Color("#d9dfbc"), Color("#9aa779"), 4))
+	cozy.set_color("font_color", &"QuantityButton", Color("#3d4933"))
+	cozy.set_type_variation(&"OrderButton", &"Button")
+	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#5e704c"), Color("#4a5e3f"), 4))
 	$Root.theme = cozy
 
 func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:

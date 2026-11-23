@@ -51,3 +51,17 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   menu exists. Stock resets on restart.
 - Storage is seeded with free demonstration goods. Economy, purchasing, shelf stock,
   customers, checkout, time and day reports are deliberately outside this milestone.
+
+## Supplier purchasing milestone
+
+- Branched from PR #1 at `73e4bb8255c3468d6cd79b9cfee5dad829a9279d`.
+- Official Godot **4.3.stable.official.77dcf97d8** completed the editor import,
+  **133 checks with zero failures**, and the 60-frame main-scene smoke run.
+- Added coverage for the starting balance, catalog prices, invalid orders, insufficient
+  funds, total capacity and stack limits, exact-balance purchases, and stock and balance
+  notifications. The scene test opens the desk with physical E, changes the quantity,
+  orders into storage, checks both failure messages, and verifies the HUD and storage view.
+- In graphical Linux/Godot 4.3, walked to the order desk, opened the menu with E, and
+  used the + and Order buttons to buy two apples. The balance changed from 100 to 94,
+  the apple count from 6 to 8, and storage from 13 to 15 units. Esc closed the panel
+  and the world HUD showed 94 coins. [Screenshot of the completed order](supplier-menu.png).

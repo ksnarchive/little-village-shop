@@ -1,6 +1,7 @@
-[gd_scene load_steps=2 format=3]
+[gd_scene load_steps=3 format=3]
 
 [ext_resource type="Script" path="res://scripts/inventory_menu.gd" id="1"]
+[ext_resource type="PackedScene" path="res://scenes/ui/supplier_menu.tscn" id="2"]
 
 [node name="InventoryUI" type="CanvasLayer"]
 script = ExtResource("1")
@@ -15,6 +16,7 @@ grow_vertical = 2
 mouse_filter = 2
 
 [node name="Hint" type="Label" parent="Root"]
+unique_name_in_owner = true
 offset_left = 12.0
 offset_top = 8.0
 theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
@@ -40,6 +42,35 @@ theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 horizontal_alignment = 1
 
+[node name="SupplierShade" type="ColorRect" parent="Root"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.19, 0.15, 0.11, 0.42)
+
+[node name="BalanceCard" type="PanelContainer" parent="Root"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -125.0
+offset_top = 8.0
+offset_right = -12.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"BalanceCard"
+
+[node name="Balance" type="Label" parent="Root/BalanceCard"]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+
 [node name="Center" type="CenterContainer" parent="Root"]
 layout_mode = 1
 anchors_preset = 15
@@ -59,25 +90,34 @@ layout_mode = 2
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Title" type="Label" parent="Root/Center/Panel/Content"]
+[node name="InventoryContent" type="VBoxContainer" parent="Root/Center/Panel/Content"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Title" type="Label" parent="Root/Center/Panel/Content/InventoryContent"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Your bag"
 
-[node name="Capacity" type="Label" parent="Root/Center/Panel/Content"]
+[node name="Capacity" type="Label" parent="Root/Center/Panel/Content/InventoryContent"]
 unique_name_in_owner = true
 layout_mode = 2
 
-[node name="Rows" type="VBoxContainer" parent="Root/Center/Panel/Content"]
+[node name="Rows" type="VBoxContainer" parent="Root/Center/Panel/Content/InventoryContent"]
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_constants/separation = 6
 
-[node name="Message" type="Label" parent="Root/Center/Panel/Content"]
+[node name="Message" type="Label" parent="Root/Center/Panel/Content/InventoryContent"]
 unique_name_in_owner = true
 layout_mode = 2
 text = "Visit storage to collect or return goods."
+
+[node name="SupplierMenu" parent="Root/Center/Panel/Content" instance=ExtResource("2")]
+unique_name_in_owner = true
+layout_mode = 2
 
 [node name="Close" type="Button" parent="Root/Center/Panel/Content"]
 unique_name_in_owner = true
