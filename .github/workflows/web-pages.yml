@@ -55,7 +55,7 @@ jobs:
         run: |
           npm ci
           npx playwright install --with-deps chromium webkit
-      - name: Browser integration checks
+      - name: Browser startup, touch and persistence checks
         shell: bash
         run: |
           python3 -m http.server 8060 --bind 127.0.0.1 --directory builds/web > builds/http.log 2>&1 &

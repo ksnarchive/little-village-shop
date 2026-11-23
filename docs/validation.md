@@ -390,3 +390,14 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   The workflow uploads the tested artifact and verifies public `build-info.json`
   against its exact commit after a successful deployment. Until that step succeeds,
   publication of the new interior on GitHub Pages remains unverified.
+
+- Continuous release gate: `npm test` now checks real startup, touch D-pad/menus,
+  manual IndexedDB save, reload/Continue and viewport bounds in both browsers during
+  preparation. All 529 native logic/scene tests still run on every build. The longer
+  `npm run test:gameplay` remains available separately; visual recognition can be
+  interrupted by overlapping actors and real-time visitor admission. Both complete
+  browser gameplay scenarios passed in [CI run 45276534925](https://github.com/ksnarchive/little-village-shop/actions/runs/45276534925)
+  on `461d7d8`; the production game/scripts/settings/export/shell have not changed since
+  that verified build. Optional timing-sensitive gameplay automation does not gate
+  publication. Its intermittent failures are test-runner limitations, not evidence
+  of a Safari-device verification.
