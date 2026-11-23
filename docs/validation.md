@@ -20,6 +20,9 @@
 - Tests synthesize engine input and exercise real scenes, not OS keyboard hardware.
 - CI now uses the same runner and also fails on logged engine/script errors, even when
   Godot's process returns zero. Existing Godot version and workflow triggers are preserved.
+- Full CI-log inspection found that the hosted runner lacks `rg`; the log guard now uses
+  standard `grep`. A local fake-engine probe returning zero while logging a script error
+  was correctly rejected. Genuine Godot checks were rerun after the guard fix.
 - [PR #1](https://github.com/ksnarchive/little-village-shop/pull/1) implementation commit
   `6caea4ec50c9d9d0834f9f59f4e0c3efb0767334` passed GitHub Actions
   [45158321661](https://github.com/ksnarchive/little-village-shop/actions/runs/45158321661).

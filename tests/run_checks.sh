@@ -9,7 +9,7 @@ trap 'rm -f "$check_log"' EXIT
 
 run_checked() {
     "$GODOT_BIN" "$@" 2>&1 | tee "$check_log"
-    if rg -q 'SCRIPT ERROR:|(^|[[:space:]])ERROR:' "$check_log"; then
+    if grep -Eq 'SCRIPT ERROR:|(^|[[:space:]])ERROR:' "$check_log"; then
         return 1
     fi
 }
