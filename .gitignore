@@ -1,0 +1,10 @@
+# Godot 4 generated import cache
+.godot/
+# Local builds and temporary files
+/builds/
+/exports/
+*.tmp
+.DS_Store
+Thumbs.db
+# Save games belong in user://, not the repository
+/saves/
