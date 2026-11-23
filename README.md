@@ -14,6 +14,12 @@ A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Wi
   update immediately. Movement and world interaction stop while a menu is open.
 - **E** at the front of the wooden order desk opens the village supplier. Choose a quantity
   with **− / +** and select **Order**. Apples cost 3 coins each, bread 5, and milk 7.
+- **E** at the right front of the checkout counter opens service. The panel shows the
+  first villager's product, selling price, balance and session sales totals. Select
+  **Обслужить** to accept payment; **Esc**, **I** or Close returns to the room.
+- Successful sales empty exactly one NPC basket, credit the product's `selling_price`,
+  and show a green confirmation with a small pixel coin sparkle. The HUD tracks gross
+  revenue and the number of completed sales for this session.
 - The shop starts with **100 coins**. The HUD and supplier panel show the current balance.
   Each order delivers one product directly to storage when there are enough coins and the
   full quantity fits. The panel updates the balance and storage after the delivery.
@@ -40,9 +46,16 @@ Three villagers have different coats, hair and headwear in the same original pix
 A product bubble shows the goods being carried; floor marks and a HUD counter explain the
 checkout queue. One visitor browses at a time, with a 7-second gap after a completed visit.
 Up to three customers wait at distinct checkout positions. Arrivals stop when all three
-places are occupied. **There is no payment or checkout service yet**: customers and their
-unpaid goods remain at the counter until restart. Open menus pause visitors and arrival
-timers alongside the shopkeeper.
+places are occupied. Unpaid goods stay in NPC baskets until served. The paid villager
+walks out along a separate lane above the queue, then the remaining villagers walk forward.
+New arrivals resume when space is available and the arrival interval elapses.
+
+Inventory, supplier and shelf menus pause visitors and arrival timers alongside the
+shopkeeper. The checkout menu blocks player/world input and new arrivals, but allows an
+already active visitor to finish their visit, paid departures and queue advances to move.
+To preserve the existing one-moving-visitor routes, service briefly waits for that active
+visit to finish and for the queue to settle. The status explains the wait and the service
+button enables automatically; there is no need to close/reopen the panel between sales.
 
 ## Run
 
@@ -66,11 +79,12 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/shelf_menu.gd`, `scenes/ui/shelf_menu.tscn` | Quantity selection and validated bag ↔ shelf transfers in the shared modal UI |
 | `scripts/customer.gd`, `scenes/characters/customer.tscn` | Visitor FSM, continuous physics movement, one-unit unpaid basket and three original villager appearances |
 | `scripts/customer_flow.gd` | Bounded arrivals, authored AStar2D aisle routes, shelf discovery and three checkout positions |
-| `scripts/shop_economy.gd` | Balance and validated supplier purchases |
+| `scripts/shop_economy.gd` | Balance, validated supplier purchases, atomic basket sales and session totals |
+| `scripts/checkout_menu.gd`, `scenes/ui/checkout_menu.tscn`, `scripts/coin_effect.gd` | First-customer service panel, sale feedback and transient pixel coins |
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
 | `assets/items/` | Original SVG icons composed on a 16×16 pixel grid |
-| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
+| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
 
 Inventory capacity counts **total units**, not slots. Each product has one stack limited by
 `max_stack_size`. Rejected operations change nothing and emit no change notification.
@@ -90,14 +104,26 @@ Shelf capacity is shared across all products, with no extra product/category res
 The six visible product positions represent occupancy, rather than a one-icon-per-unit count.
 
 Customer goods move with the existing atomic `Inventory.transfer_to()` into each NPC's
-one-unit `basket`; nothing is sold, deleted or copied when they reach checkout. Stock is
+one-unit `basket`; nothing is sold, deleted or copied merely by reaching checkout. Stock is
 read again on arrival rather than reserved during route planning. NPCs use shelf interaction
 positions as approach anchors without opening the player's interaction menus. The authored
 `AStar2D` graph connects the doorway, foyer, central aisle, shelf fronts and checkout slots.
 It is designed for this fixed room; moving furniture requires updating routes and rerunning
 the physics tests. Visitors collide with walls/furniture, and do not block player movement
-or E-interaction rays. Only one moving shopper is admitted, so checkout arrivals do not
-cross occupied queue slots or compete for narrow shelf approaches.
+or E-interaction rays. Only one browsing shopper is admitted. Service waits until it joins the queue or leaves,
+then one paid departure completes before the queue advances together. Arrivals stay blocked
+during this transition, so walkers do not cross occupied queue slots or shelf approaches.
+
+`CustomerFlow.serve_customer(expected_customer)` validates the displayed identity, first
+queue position, settled state and basket against `ShopEconomy.can_sell()`. It stages queue
+removal and departure without callbacks, then `ShopEconomy.sell()` commits basket removal,
+balance, revenue and completed-sales count before any notification. The flow/economy guards
+reject reentrant service, repeated clicks and stale identities. Invalid baskets, mismatched
+catalogs, negative prices and integer overflows leave goods and coins untouched. Revenue
+is gross selling proceeds, not profit; purchases do not increase it. These are session
+counters only, reset on restart, with no day cycle or persistence.
+
+Checkout preview: [successful sale with the next basket](docs/checkout-sale.png).
 
 Customer preview: [three villagers waiting at checkout](docs/customers-checkout.png).
 
@@ -125,16 +151,20 @@ mixed products, stale stock and alternate-shelf recovery, automatic arrivals, bo
 modal pause/resume, distinct villager appearances, HUD fit and restart. They simulate whole
 visits with real physics, checking collision-free continuous motion and conservation of all
 goods on every physics frame, including atomic transfer notifications. Waiting does not
-change coins, consume goods or remove customers. A main-scene smoke run follows the tests.
+change coins, consume goods or remove customers. Checkout checks run the complete
+purchase → storage → bag → shelf → NPC → payment loop, verify stock plus sold-unit
+conservation on every physics frame, and inspect all transaction notifications. They cover
+reentrant/stale/out-of-order calls, double clicks, invalid baskets, prices/overflow, continuous
+paid exits and queue advances, resumed arrivals, input guards, counter reset, feedback and
+coin cleanup. A main-scene smoke run follows the tests.
 
 Headless results do not establish visual quality or Windows compatibility. See
 [`docs/validation.md`](docs/validation.md) for this milestone's actual verification and limitations.
 
 ## Next milestones
 
-1. Checkout service/payment (separate future milestone).
-2. Day cycle, reports and versioned game saves.
-3. Original art/audio, broader desktop testing and Windows export.
+1. Day cycle, reports and versioned game saves.
+2. Original art/audio, broader desktop testing and Windows export.
 
-The current procedural room is preserved; village expansion, checkout service and day systems remain future work.
+The current procedural room is preserved; village expansion and day systems remain future work.
 All current graphics are original project placeholders; no commercial game assets are used.
