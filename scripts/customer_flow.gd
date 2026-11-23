@@ -181,3 +181,17 @@ func _draw() -> void:
 	# Quiet floor markers make the checkout line legible before anyone arrives.
 	for point in QUEUE_POSITIONS:
 		draw_rect(Rect2(point + Vector2(-7, 8), Vector2(14, 2)), Color("#b5b58b"))
+
+func reset_for_load() -> void:
+	# Synchronous removal makes consecutive loads idempotent, including queued deletions.
+	for customer in get_children():
+		customer.free()
+	waiting.clear()
+	active_customer = null
+	departing_customer = null
+	_serving = false
+	service_menu_open = false
+	_next_appearance = 0
+	reset_arrival_timer()
+	queue_changed.emit(0)
+	queue_redraw()

@@ -4,8 +4,15 @@ extends CanvasLayer
 
 signal menu_visibility_changed(is_open: bool)
 
-enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF, CHECKOUT, DAY_END }
+enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF, CHECKOUT, DAY_END, PAUSE }
 var view: View = View.CLOSED
+signal save_requested
+
+var pause_content: VBoxContainer
+var save_button: Button
+var save_notice: Label
+var report_save_status: Label
+var save_status: Label
 var _day: ShopDay
 @onready var clock_card: PanelContainer = %ClockCard
 @onready var clock_label: Label = %Clock
@@ -39,6 +46,7 @@ var _prompt_text: String = ""
 func _ready() -> void:
 	_apply_theme()
 	close_button.pressed.connect(close_menu)
+	_build_pause_menu()
 
 func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void:
 	_bag = bag
@@ -174,13 +182,15 @@ func _open(next_view: View) -> void:
 	supplier_menu.visible = view == View.SUPPLIER
 	checkout_menu.visible = view == View.CHECKOUT
 	day_report.visible = view == View.DAY_END
+	pause_content.visible = view == View.PAUSE
 	close_button.visible = view != View.DAY_END
 	clock_card.visible = view != View.DAY_END
-	var has_shade := view in [View.SUPPLIER, View.SHELF, View.CHECKOUT, View.DAY_END]
+	var has_shade := view in [View.SUPPLIER, View.SHELF, View.CHECKOUT, View.DAY_END, View.PAUSE]
 	supplier_shade.visible = has_shade
 	balance_card.visible = not has_shade
 	controls_hint.visible = not has_shade
 	panel.custom_minimum_size.x = 536 if view == View.SHELF else 462
+	save_notice.hide()
 	panel.show()
 	if inventory_content.visible:
 		message.text = "Move one item at a time." if view == View.STORAGE else "Visit storage to collect or return goods."
@@ -197,7 +207,9 @@ func close_menu() -> void:
 	sales_label.show()
 	shelf_menu.release_shelf()
 	panel.hide()
+	save_notice.show()
 	day_report.hide()
+	pause_content.hide()
 	close_button.show()
 	clock_card.show()
 	supplier_shade.hide()
@@ -227,8 +239,11 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			close_menu()
 		get_viewport().set_input_as_handled()
-	elif event.is_action_pressed("ui_cancel") and view != View.CLOSED:
-		close_menu()
+	elif event.is_action_pressed("ui_cancel"):
+		if view == View.CLOSED:
+			open_pause()
+		else:
+			close_menu()
 		get_viewport().set_input_as_handled()
 
 func _transfer(item_id: StringName, from_storage: bool) -> void:
@@ -262,6 +277,9 @@ func _refresh() -> void:
 		deposit.disabled = not (_bag.can_remove(item_id, 1) and _storage.can_add(item_id, 1))
 
 func _apply_theme() -> void:
+	$Root.theme = cozy_theme()
+
+static func cozy_theme() -> Theme:
 	var cozy := Theme.new()
 	cozy.default_font_size = 14
 	cozy.set_color("font_color", "Label", Color("#513a31"))
@@ -288,9 +306,9 @@ func _apply_theme() -> void:
 	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#5e704c"), Color("#4a5e3f"), 4))
 	cozy.set_stylebox("background", "ProgressBar", _style(Color("#c6b18a"), Color("#9d7455"), 0))
 	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#82936b"), Color("#61734f"), 0))
-	$Root.theme = cozy
+	return cozy
 
-func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
+static func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
 	style.border_color = border
@@ -300,3 +318,49 @@ func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
 	style.content_margin_top = padding
 	style.content_margin_bottom = padding
 	return style
+
+func _build_pause_menu() -> void:
+	pause_content = VBoxContainer.new()
+	pause_content.add_theme_constant_override("separation", 12)
+	panel.get_node("Content").add_child(pause_content)
+	panel.get_node("Content").move_child(pause_content, 0)
+	var heading := Label.new()
+	heading.text = "Тихая пауза"
+	heading.add_theme_font_size_override("font_size", 22)
+	pause_content.add_child(heading)
+	save_status = Label.new()
+	save_status.custom_minimum_size.x = 420
+	save_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	pause_content.add_child(save_status)
+	save_button = Button.new()
+	save_button.text = "Сохранить игру"
+	save_button.pressed.connect(func(): save_requested.emit())
+	pause_content.add_child(save_button)
+	pause_content.hide()
+	report_save_status = day_report.get_node("Footer")
+	report_save_status.custom_minimum_size.x = 420
+	report_save_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	save_notice = Label.new()
+	save_notice.position = Vector2(12, 302)
+	save_notice.size.x = 250
+	save_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	save_notice.add_theme_font_size_override("font_size", 11)
+	save_notice.add_theme_color_override("font_color", Color("#fff2d7"))
+	save_notice.add_theme_color_override("font_shadow_color", Color("#513a31"))
+	$Root.add_child(save_notice)
+
+func open_pause() -> void:
+	_open(View.PAUSE)
+	if view == View.PAUSE:
+		save_button.grab_focus()
+
+func restore_view() -> void:
+	# Discard transient menus/subscriptions/effects and reconstruct the report if needed.
+	view = View.BAG
+	close_menu()
+	for child in $Root.get_children():
+		if child.get_script() == preload("res://scripts/coin_effect.gd"):
+			child.free()
+	_update_clock()
+	if _day.phase == ShopDay.Phase.SUMMARY:
+		show_day_report(_day.report())
