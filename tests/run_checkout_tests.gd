@@ -102,6 +102,8 @@ func _shop() -> Node2D:
 	var scene: PackedScene = load("res://scenes/main.tscn")
 	var shop: Node2D = scene.instantiate()
 	root.add_child(shop)
+	shop.day.advance_time(60.0 / ShopDay.MINUTES_PER_SECOND)
+	shop.day.set_physics_process(false)
 	shop.customers.arrivals_enabled = false
 	shop.customers.rng.seed = 47
 	_expected_goods = 13

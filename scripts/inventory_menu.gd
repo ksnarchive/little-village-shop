@@ -4,8 +4,15 @@ extends CanvasLayer
 
 signal menu_visibility_changed(is_open: bool)
 
-enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF, CHECKOUT }
+enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF, CHECKOUT, DAY_END }
 var view: View = View.CLOSED
+var _day: ShopDay
+@onready var clock_card: PanelContainer = %ClockCard
+@onready var clock_label: Label = %Clock
+@onready var phase_label: Label = %DayPhase
+@onready var day_report: VBoxContainer = %DayReport
+@onready var next_day_button: Button = %DayReport/NextDay
+
 var _bag: Inventory
 var _storage: Inventory
 var _rows: Dictionary = {}
@@ -67,6 +74,44 @@ func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void
 	_storage.changed.connect(_refresh)
 	_refresh()
 
+func configure_day(day: ShopDay) -> void:
+	_day = day
+	day.clock_changed.connect(_update_clock)
+	day.day_finished.connect(show_day_report)
+	day.day_started.connect(_dismiss_day_report)
+	next_day_button.pressed.connect(day.start_next_day)
+	_update_clock()
+
+func _update_clock() -> void:
+	clock_label.text = "День %d · %s" % [_day.day_number, _day.time_text()]
+	phase_label.text = _day.phase_text()
+
+func show_day_report(report: Dictionary) -> void:
+	# Close any service panel before locking the modal to the finished report.
+	close_menu()
+	var totals: GridContainer = day_report.get_node("Totals")
+	for child in totals.get_children():
+		totals.remove_child(child)
+		child.queue_free()
+	var names := ["Завершённый день", "Обслужено покупателей", "Выручка", "Закупки", "Прибыль", "Баланс магазина"]
+	var keys := ["day", "customers", "revenue", "expenses", "profit", "balance"]
+	for index in range(keys.size()):
+		var label := Label.new()
+		label.text = names[index]
+		label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		totals.add_child(label)
+		var value := Label.new()
+		value.text = str(report[keys[index]]) + (" монет" if index >= 2 else "")
+		value.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		totals.add_child(value)
+	_open(View.DAY_END)
+	next_day_button.grab_focus()
+
+func _dismiss_day_report() -> void:
+	# Only ShopDay.day_started can dismiss the report; Esc/I cannot skip it.
+	view = View.BAG
+	close_menu()
+
 func configure_supplier(catalog: ItemCatalog, storage: Inventory, economy: ShopEconomy) -> void:
 	supplier_menu.configure(catalog, storage, economy)
 	economy.balance_changed.connect(_update_balance)
@@ -82,6 +127,8 @@ func configure_checkout(flow: CustomerFlow, economy: ShopEconomy) -> void:
 	_update_sales(economy.revenue, economy.completed_sales)
 
 func open_checkout() -> void:
+	if view == View.DAY_END:
+		return
 	checkout_menu.open_checkout()
 	_open(View.CHECKOUT)
 
@@ -95,20 +142,30 @@ func _sale_feedback(_item: ItemData, _customer: ShopCustomer) -> void:
 	effect.position = panel.position + Vector2(panel.size.x - 40, 84)
 
 func open_shelf(shelf: ShopShelf) -> void:
+	if view == View.DAY_END:
+		return
 	shelf_menu.open_shelf(shelf)
 	_open(View.SHELF)
 
 func open_storage() -> void:
+	if view == View.DAY_END:
+		return
 	_open(View.STORAGE)
 
 func open_inventory() -> void:
+	if view == View.DAY_END:
+		return
 	_open(View.BAG)
 
 func open_supplier() -> void:
+	if view == View.DAY_END:
+		return
 	supplier_menu.reset_order()
 	_open(View.SUPPLIER)
 
 func _open(next_view: View) -> void:
+	if view == View.DAY_END:
+		return
 	view = next_view
 	checkout_label.hide()
 	sales_label.hide()
@@ -116,7 +173,10 @@ func _open(next_view: View) -> void:
 	shelf_menu.visible = view == View.SHELF
 	supplier_menu.visible = view == View.SUPPLIER
 	checkout_menu.visible = view == View.CHECKOUT
-	var has_shade := view in [View.SUPPLIER, View.SHELF, View.CHECKOUT]
+	day_report.visible = view == View.DAY_END
+	close_button.visible = view != View.DAY_END
+	clock_card.visible = view != View.DAY_END
+	var has_shade := view in [View.SUPPLIER, View.SHELF, View.CHECKOUT, View.DAY_END]
 	supplier_shade.visible = has_shade
 	balance_card.visible = not has_shade
 	controls_hint.visible = not has_shade
@@ -130,13 +190,16 @@ func _open(next_view: View) -> void:
 	set_prompt(_prompt_text)
 
 func close_menu() -> void:
-	if view == View.CLOSED:
+	if view in [View.CLOSED, View.DAY_END]:
 		return
 	view = View.CLOSED
 	checkout_label.show()
 	sales_label.show()
 	shelf_menu.release_shelf()
 	panel.hide()
+	day_report.hide()
+	close_button.show()
+	clock_card.show()
 	supplier_shade.hide()
 	balance_card.show()
 	controls_hint.show()

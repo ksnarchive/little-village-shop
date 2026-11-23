@@ -21,6 +21,13 @@ var completed_sales: int:
 	get:
 		return _completed_sales
 
+# Daily values commit before inventory/balance notifications, like session totals.
+var day_revenue: int = 0
+var day_sales: int = 0
+var day_expenses: int = 0
+var transactions_enabled: bool = true
+var _buying: bool = false
+
 var _revenue: int = 0
 var _completed_sales: int = 0
 var _selling: bool = false
@@ -32,6 +39,11 @@ func _init(catalog: ItemCatalog, storage: Inventory) -> void:
 	_catalog = catalog
 	_storage = storage
 
+func reset_day_totals() -> void:
+	day_revenue = 0
+	day_sales = 0
+	day_expenses = 0
+
 func order_cost(item: ItemData, amount: int) -> int:
 	if item.purchase_price < 0 or amount < 1:
 		return -1
@@ -41,33 +53,41 @@ func order_cost(item: ItemData, amount: int) -> int:
 	return item.purchase_price * amount
 
 func buy(item_id: StringName, amount: int) -> PurchaseResult:
+	if not transactions_enabled or _buying or _selling:
+		return PurchaseResult.INVALID_QUANTITY
 	var item := _catalog.find(item_id)
 	if item == null or item.purchase_price < 0:
 		return PurchaseResult.INVALID_PRODUCT
 	if amount < 1:
 		return PurchaseResult.INVALID_QUANTITY
 	var cost := order_cost(item, amount)
-	if cost < 0 or cost > _balance:
+	if cost < 0 or cost > _balance or cost > MAX_COINS - day_expenses:
 		return PurchaseResult.INSUFFICIENT_FUNDS
 
 	# Inventory.add validates storage limits and notifies observers synchronously.
 	# Set the balance first so those observers see the completed purchase.
+	_buying = true
 	_balance -= cost
+	day_expenses += cost
 	if not _storage.add(item_id, amount):
 		_balance += cost
+		day_expenses -= cost
+		_buying = false
 		return PurchaseResult.INSUFFICIENT_SPACE
 	if cost > 0:
 		balance_changed.emit(_balance)
+	_buying = false
 	return PurchaseResult.SUCCESS
 
 func can_sell(basket: Inventory, item_id: StringName) -> bool:
 	var item := _catalog.find(item_id)
-	return (not _selling and basket != null and item != null
+	return (transactions_enabled and not _buying and not _selling and basket != null and item != null
 		and basket._catalog.find(item_id) == item and basket.total_units() == 1
 		and basket.can_remove(item_id, 1) and item.selling_price >= 0
 		and item.selling_price <= MAX_COINS - _balance
 		and item.selling_price <= MAX_COINS - _revenue
-		and _completed_sales < MAX_COINS)
+		and _completed_sales < MAX_COINS and day_sales < MAX_COINS
+		and item.selling_price <= MAX_COINS - day_revenue)
 
 func sell(basket: Inventory, item_id: StringName) -> bool:
 	if not can_sell(basket, item_id):
@@ -80,6 +100,8 @@ func sell(basket: Inventory, item_id: StringName) -> bool:
 	_balance += price
 	_revenue += price
 	_completed_sales += 1
+	day_revenue += price
+	day_sales += 1
 	basket.changed.emit()
 	if price > 0:
 		balance_changed.emit(_balance)

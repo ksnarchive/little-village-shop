@@ -7,6 +7,7 @@ signal sale_completed(item: ItemData, customer: ShopCustomer)
 
 const MAX_CUSTOMERS: int = 3
 const ARRIVAL_INTERVAL: float = 7.0
+const RUSH_INTERVAL: float = 3.0
 const ENTRANCE := Vector2(320, 328)
 const FOYER := Vector2(320, 260)
 const AISLE := Vector2(320, 184)
@@ -18,6 +19,8 @@ var waiting: Array[ShopCustomer] = []
 var active_customer: ShopCustomer
 var departing_customer: ShopCustomer
 var service_menu_open: bool = false
+var business_open: bool = true
+var arrival_interval: float = ARRIVAL_INTERVAL
 var economy: ShopEconomy
 var _serving: bool = false
 var catalog: ItemCatalog
@@ -48,7 +51,7 @@ func configure(products: ItemCatalog, shop_shelves: Array[ShopShelf]) -> void:
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
-	if service_menu_open or checkout_busy() or not arrivals_enabled or catalog == null or is_instance_valid(active_customer):
+	if service_menu_open or checkout_busy() or not arrivals_enabled or not business_open or catalog == null or is_instance_valid(active_customer):
 		return
 	if waiting.size() >= MAX_CUSTOMERS:
 		return
@@ -57,7 +60,7 @@ func _physics_process(delta: float) -> void:
 		spawn_customer()
 
 func spawn_customer() -> ShopCustomer:
-	if service_menu_open or checkout_busy() or catalog == null or is_instance_valid(active_customer) or waiting.size() >= MAX_CUSTOMERS:
+	if not business_open or service_menu_open or checkout_busy() or catalog == null or is_instance_valid(active_customer) or waiting.size() >= MAX_CUSTOMERS:
 		return null
 	var scene: PackedScene = load("res://scenes/characters/customer.tscn")
 	var customer: ShopCustomer = scene.instantiate()
@@ -68,6 +71,20 @@ func spawn_customer() -> ShopCustomer:
 	active_customer = customer
 	customer.start_visit()
 	return customer
+
+func set_business_hours(is_open: bool, rush: bool) -> void:
+	business_open = is_open
+	arrival_interval = RUSH_INTERVAL if rush else ARRIVAL_INTERVAL
+	if is_open:
+		_arrival_time = minf(_arrival_time, arrival_interval)
+
+func reset_arrival_timer() -> void:
+	_arrival_time = 4.0
+
+func is_empty() -> bool:
+	# Include deferred queue_free nodes: reports wait until the last exit is gone.
+	return (not _serving and waiting.is_empty() and not is_instance_valid(active_customer)
+		and not is_instance_valid(departing_customer) and get_child_count() == 0)
 
 func route(from: Vector2, destination: Vector2) -> PackedVector2Array:
 	return _paths.get_point_path(_paths.get_closest_point(from), _paths.get_closest_point(destination))
@@ -87,7 +104,7 @@ func join_checkout(customer: ShopCustomer) -> void:
 		return
 	waiting.append(customer)
 	active_customer = null
-	_arrival_time = ARRIVAL_INTERVAL
+	_arrival_time = arrival_interval
 	queue_changed.emit(waiting.size())
 	queue_redraw()
 
@@ -95,7 +112,7 @@ func finish_empty_visit(customer: ShopCustomer) -> void:
 	if customer != active_customer or customer.basket.total_units() != 0:
 		return
 	active_customer = null
-	_arrival_time = ARRIVAL_INTERVAL
+	_arrival_time = arrival_interval
 	customer.queue_free()
 	queue_changed.emit(waiting.size())
 

@@ -36,7 +36,8 @@ A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Wi
 The bag starts empty (24-unit capacity). Storage holds 6 apples, 4 bread and 3 milk
 (60-unit capacity) as **free demo stock**. Restarting resets inventory and balance.
 Both shelves start empty, each with its own **12-unit capacity** shared across products.
-Visitors arrive automatically at the south doorway (first after 4 seconds). They walk
+Visitors arrive automatically at the south doorway after the shop opens at 09:00
+(first after 4 seconds). They walk
 into the central aisle, look for stocked shelves, choose one available product and carry it
 in a small basket to the checkout. Empty-handed visitors walk back out; if the player empties
 a target shelf en route, they search again or leave. Stock the shelves using the existing
@@ -48,7 +49,7 @@ checkout queue. One visitor browses at a time, with a 7-second gap after a compl
 Up to three customers wait at distinct checkout positions. Arrivals stop when all three
 places are occupied. Unpaid goods stay in NPC baskets until served. The paid villager
 walks out along a separate lane above the queue, then the remaining villagers walk forward.
-New arrivals resume when space is available and the arrival interval elapses.
+During business hours, new arrivals resume when space is available and the arrival interval elapses.
 
 Inventory, supplier and shelf menus pause visitors and arrival timers alongside the
 shopkeeper. The checkout menu blocks player/world input and new arrivals, but allows an
@@ -56,6 +57,31 @@ already active visitor to finish their visit, paid departures and queue advances
 To preserve the existing one-moving-visitor routes, service briefly waits for that active
 visit to finish and for the queue to settle. The status explains the wait and the service
 button enables automatically; there is no need to close/reopen the panel between sales.
+
+## Workdays and game time
+
+- The cream clock card shows the current day, HH:MM and shop phase.
+- A new game begins on **day 1 at 08:00**. Preparation lasts until **09:00**;
+  buying, bag/storage transfers and shelf restocking are available immediately.
+- At **09:00** the shop opens automatically. **12:00–14:00** is the lunch rush:
+  the gap between visits drops from **7 to 3 seconds**, within the existing bounded
+  queue and one-browsing-customer routing. Normal arrivals resume at **14:00**.
+- At **18:00** admission closes. Existing visitors finish browsing or leave empty-handed;
+  waiting guests still need service at the counter. No goods or guests are discarded.
+- After the last guest walks out, the day report shows the day number, paid customers,
+  gross revenue, supplier expenses, profit (revenue minus expenses), and current balance.
+  **«Следующий день»** begins the next morning at **08:00**. Esc/I cannot skip the report.
+- Time runs at **1.5 game minutes per real second**: a day takes **6 minutes 40 seconds**,
+  plus time spent in menus and serving remaining guests after closing. Every menu pauses
+  the clock, including checkout. Checkout retains its existing NPC movement exception so
+  active visits, departures and queue advances can finish while the panel is open.
+- Day transitions reuse the same economy, bag, storage and shelf inventories. Coins and
+  unsold goods persist; only daily totals and the arrival delay reset. Purchases during
+  preparation count toward that day's expenses. Free demo stock is not an expense.
+- Reports are in-memory snapshots. Restarting still starts a fresh game; there is no disk
+  save system. A quiet/empty shop also completes its day with a zero-sales report.
+
+Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/day-summary.png).
 
 ## Run
 
@@ -79,12 +105,13 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/shelf_menu.gd`, `scenes/ui/shelf_menu.tscn` | Quantity selection and validated bag ↔ shelf transfers in the shared modal UI |
 | `scripts/customer.gd`, `scenes/characters/customer.tscn` | Visitor FSM, continuous physics movement, one-unit unpaid basket and three original villager appearances |
 | `scripts/customer_flow.gd` | Bounded arrivals, authored AStar2D aisle routes, shelf discovery and three checkout positions |
-| `scripts/shop_economy.gd` | Balance, validated supplier purchases, atomic basket sales and session totals |
+| `scripts/shop_economy.gd` | Balance, validated supplier purchases, atomic basket sales, session/daily totals |
+| `scripts/shop_day.gd`, `scenes/ui/day_report.tscn` | Clock, shop phases, closing drain, immutable report snapshots and next morning |
 | `scripts/checkout_menu.gd`, `scenes/ui/checkout_menu.tscn`, `scripts/coin_effect.gd` | First-customer service panel, sale feedback and transient pixel coins |
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
 | `assets/items/` | Original SVG icons composed on a 16×16 pixel grid |
-| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
+| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_day_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
 
 Inventory capacity counts **total units**, not slots. Each product has one stack limited by
 `max_stack_size`. Rejected operations change nothing and emit no change notification.
@@ -120,8 +147,9 @@ removal and departure without callbacks, then `ShopEconomy.sell()` commits baske
 balance, revenue and completed-sales count before any notification. The flow/economy guards
 reject reentrant service, repeated clicks and stale identities. Invalid baskets, mismatched
 catalogs, negative prices and integer overflows leave goods and coins untouched. Revenue
-is gross selling proceeds, not profit; purchases do not increase it. These are session
-counters only, reset on restart, with no day cycle or persistence.
+is gross selling proceeds, not profit; purchases do not increase it. The existing revenue and sales HUD remains session-wide. Separate daily counters include
+only successful purchases and paid sales, committed before transaction notifications.
+Daily counters reset at the next morning; session totals reset only on restart.
 
 Checkout preview: [successful sale with the next basket](docs/checkout-sale.png).
 
@@ -156,15 +184,19 @@ purchase → storage → bag → shelf → NPC → payment loop, verify stock pl
 conservation on every physics frame, and inspect all transaction notifications. They cover
 reentrant/stale/out-of-order calls, double clicks, invalid baskets, prices/overflow, continuous
 paid exits and queue advances, resumed arrivals, input guards, counter reset, feedback and
-coin cleanup. A main-scene smoke run follows the tests.
+coin cleanup. Day checks cover minute boundaries, actual lunch arrival delay, all modal
+clock pauses, empty and occupied closing, after-hours sales, final departures, report input
+locks/snapshots, duplicate next-day clicks, negative profit and three automatic full workdays.
+Every physics frame checks goods plus sold units and the balance equation across days.
+A main-scene smoke run follows the tests.
 
 Headless results do not establish visual quality or Windows compatibility. See
 [`docs/validation.md`](docs/validation.md) for this milestone's actual verification and limitations.
 
 ## Next milestones
 
-1. Day cycle, reports and versioned game saves.
+1. Versioned game saves (separate milestone).
 2. Original art/audio, broader desktop testing and Windows export.
 
-The current procedural room is preserved; village expansion and day systems remain future work.
+The current procedural room is preserved; village expansion remains future work.
 All current graphics are original project placeholders; no commercial game assets are used.
