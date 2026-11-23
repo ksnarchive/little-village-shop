@@ -3,7 +3,6 @@ extends Node2D
 const WALL := Color("#8c654b")
 const FLOOR := Color("#e7cda4")
 const FLOOR_ALT := Color("#dfc39a")
-const SHELF := Color("#b78b59")
 const SHELF_DARK := Color("#765238")
 const COUNTER := Color("#9d7455")
 const WINDOW := Color("#a7c4cb")
@@ -18,8 +17,6 @@ var economy: ShopEconomy
 @onready var order_desk: Interactable = $OrderDesk
 @onready var inventory_ui: InventoryMenu = $InventoryUI
 var fixtures: Array[Rect2] = [
-    Rect2(176, 112, 64, 48),
-    Rect2(400, 112, 64, 48),
     Rect2(176, 272, 64, 16)
 ]
 
@@ -36,11 +33,18 @@ func _ready() -> void:
     economy = ShopEconomy.new(CATALOG, storage.inventory)
     inventory_ui.configure(CATALOG, player_inventory, storage.inventory)
     inventory_ui.configure_supplier(CATALOG, storage.inventory, economy)
+    inventory_ui.configure_shelves(CATALOG, player_inventory)
+    for shelf: ShopShelf in [$LeftShelf, $RightShelf]:
+        shelf.interacted.connect(_on_shelf_interacted.bind(shelf))
     storage.interacted.connect(_on_storage_interacted)
     order_desk.interacted.connect(_on_order_desk_interacted)
     interactions.target_changed.connect(_on_target_changed)
     inventory_ui.menu_visibility_changed.connect(_on_menu_visibility_changed)
     queue_redraw()
+
+func _on_shelf_interacted(actor: Node2D, shelf: ShopShelf) -> void:
+    if actor == player:
+        inventory_ui.open_shelf(shelf)
 
 func _on_storage_interacted(actor: Node2D) -> void:
     if actor == player:
@@ -86,13 +90,7 @@ func _draw() -> void:
     for wx in [208, 416]:
         draw_rect(Rect2(wx, 48, 32, 12), WINDOW)
         draw_line(Vector2(wx + 16, 48), Vector2(wx + 16, 60), WALL, 2)
-    _fixture(fixtures[0], SHELF, SHELF_DARK)
-    _fixture(fixtures[1], SHELF, SHELF_DARK)
-    _fixture(fixtures[2], COUNTER, SHELF_DARK)
-    # Decorative stock in shelves.
-    for x in [184, 200, 216, 408, 424, 440]:
-        draw_circle(Vector2(x, 126), 5, Color("#b7654e"))
-        draw_rect(Rect2(x - 4, 142, 9, 8), Color("#f1deb7"))
+    _fixture(fixtures[0], COUNTER, SHELF_DARK)
     # Small flowers outside.
     for p in [Vector2(96, 80), Vector2(544, 110), Vector2(110, 275), Vector2(540, 275)]:
         draw_circle(p, 5, Color("#f1deb7"))

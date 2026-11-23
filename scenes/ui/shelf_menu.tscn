@@ -1,0 +1,50 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://scripts/shelf_menu.gd" id="1"]
+
+[node name="ShelfMenu" type="VBoxContainer"]
+visible = false
+theme_override_constants/separation = 8
+script = ExtResource("1")
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 2
+theme_type_variation = &"OrderHeader"
+
+[node name="Heading" type="VBoxContainer" parent="Header"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="ShelfTitle" type="Label" parent="Header/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 21
+
+[node name="ShelfCapacity" type="Label" parent="Header/Heading"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+
+[node name="ShelfFill" type="ProgressBar" parent="Header/Heading"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 6)
+layout_mode = 2
+mouse_filter = 2
+show_percentage = false
+
+[node name="Catalog" type="ScrollContainer" parent="."]
+custom_minimum_size = Vector2(0, 158)
+layout_mode = 2
+follow_focus = true
+horizontal_scroll_mode = 0
+
+[node name="ShelfRows" type="VBoxContainer" parent="Catalog"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 5
+
+[node name="ShelfMessage" type="Label" parent="."]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_font_sizes/font_size = 13

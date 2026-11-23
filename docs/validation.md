@@ -42,7 +42,7 @@ This is a separate graphical check, not the Godot 4.3 headless run.
 - Text and controls were readable without clipping in the inspected window. This was
   a short desktop smoke check, not an exhaustive resolution or gameplay test.
 
-## Pending / limitations
+## Foundation limitations (at that milestone)
 
 - Graphical Godot 4.3 testing and a broader resolution sweep remain pending.
 - Windows export, hardware keyboard-layout testing, gamepad/touch input and audio testing
@@ -65,3 +65,32 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   used the + and Order buttons to buy two apples. The balance changed from 100 to 94,
   the apple count from 6 to 8, and storage from 13 to 15 units. Esc closed the panel
   and the world HUD showed 94 coins. [Screenshot of the completed order](supplier-menu.png).
+
+## Shelf restocking milestone
+
+- Started from `feat/supplier-purchasing` at
+  `e99941f14efff79c5ec634f60d154f3cbe7bf8a5`; PRs #1 and #2 remain unmerged.
+  The shelf PR targets that supplier branch so its diff contains only this milestone.
+- Rechecked the unchanged supplier baseline: **133 checks, zero failures**.
+- Official **Godot 4.3.stable.official.77dcf97d8** now passes editor import,
+  **187 checks with zero failures**, and the 60-frame main-scene smoke run using
+  `bash tests/run_checks.sh`. The existing CI error-log guard remains active.
+- The 54 new checks exercise real shelf instances, configured and zero capacity,
+  invalid amounts/IDs, stack limits, atomic rejection with no notifications, exact fills,
+  round trips, mixed goods, independent inventories, all three fill states, full-bag
+  withdrawal rejection, live stock labels, quantity limits/clamping and forced stale actions.
+- Scene/input checks cover the original shelf collision footprint, front approach and
+  out-of-range use, physical E, movement/world-input blocking, Esc/I/Close, switching
+  shelf subscriptions, closed-menu guards, viewport fit, and bag use afterwards.
+- Graphical Linux check with the same official Godot **4.3**: walked to storage, took
+  6 apples, 4 bread and 2 milk into the bag, walked to the orchard shelf and pressed E.
+  Used quantity buttons to place all 12 units in batches, saw partial and full world art,
+  then returned all goods to the bag. The final panel showed shelf 0/12 and bag 12/24.
+  Menu labels and buttons fit inside the 640×360 base canvas without clipping in the
+  inspected window. The adjacent pantry shelf stayed visibly empty; coins stayed at 100.
+- Captured only the game window: [full shelf menu](shelf-menu.png) and
+  [stocked shelf beside the empty pantry shelf](shelf-stock.png).
+- This is a short Linux desktop check, not a Windows build or a full resolution sweep.
+  Touch/gamepad controls and persistent game saves remain pending. Shelf stock resets
+  on restart; no customers, selling/checkout behavior, day cycle or other large systems
+  were added.
