@@ -1,8 +1,8 @@
 class_name ShopCustomer
 extends CharacterBody2D
-## A visitor owns one unpaid item. Only Inventory.transfer_to() moves shelf goods.
+## A visitor owns one unpaid item; checkout consumes it only after a validated sale.
 
-enum State { ENTERING, SEARCHING, MOVING_TO_SHELF, MOVING_TO_CHECKOUT, WAITING_AT_CHECKOUT, LEAVING }
+enum State { ENTERING, SEARCHING, MOVING_TO_SHELF, MOVING_TO_CHECKOUT, WAITING_AT_CHECKOUT, LEAVING, ADVANCING_IN_QUEUE }
 signal state_changed(next_state: State)
 
 const SPEED: float = 46.0
@@ -32,11 +32,12 @@ func configure(flow: CustomerFlow, catalog: ItemCatalog, variant: int) -> void:
 func start_visit() -> void:
 	_travel(State.ENTERING, CustomerFlow.FOYER)
 
-func _set_state(next_state: State) -> void:
+func _set_state(next_state: State, notify: bool = true) -> void:
 	state = next_state
 	walking = false
 	velocity = Vector2.ZERO
-	state_changed.emit(state)
+	if notify:
+		state_changed.emit(state)
 	queue_redraw()
 
 func _travel(next_state: State, destination: Vector2) -> void:
@@ -45,6 +46,10 @@ func _travel(next_state: State, destination: Vector2) -> void:
 	_set_state(next_state)
 
 func _physics_process(delta: float) -> void:
+	if not _flow.can_customer_move(self):
+		walking = false
+		velocity = Vector2.ZERO
+		return
 	walking = false
 	velocity = Vector2.ZERO
 	if _pause > 0.0:
@@ -82,8 +87,12 @@ func _arrive() -> void:
 			_set_state(State.WAITING_AT_CHECKOUT)
 			facing = Vector2.DOWN
 			_flow.join_checkout(self)
+		State.ADVANCING_IN_QUEUE:
+			_set_state(State.WAITING_AT_CHECKOUT)
+			facing = Vector2.DOWN
+			_flow.queue_changed.emit(_flow.waiting.size())
 		State.LEAVING:
-			_flow.finish_empty_visit(self)
+			_flow.finish_departure(self)
 
 func _search() -> void:
 	var available := _flow.stocked_shelves()
@@ -108,6 +117,20 @@ func _take_item() -> void:
 			return
 	_set_state(State.SEARCHING)
 	_pause = 0.5
+
+func prepare_paid_departure() -> void:
+	# A separate lane above the queue clears the waiting villagers and storage.
+	# Stage silently so basket/economy observers also see the completed NPC state.
+	_route = PackedVector2Array([Vector2(208, 247), Vector2(288, 247),
+		CustomerFlow.FOYER, CustomerFlow.ENTRANCE])
+	_waypoint = 0
+	_pause = 0.0
+	_set_state(State.LEAVING, false)
+
+func advance_in_queue(slot: int) -> void:
+	_route = PackedVector2Array([CustomerFlow.QUEUE_POSITIONS[slot]])
+	_waypoint = 0
+	_set_state(State.ADVANCING_IN_QUEUE)
 
 func _draw() -> void:
 	# Same tiny, whole-pixel silhouette and warm palette as the shopkeeper.

@@ -128,7 +128,7 @@ func _test_queue() -> void:
 		_check(flow.waiting.size() == index + 1 and flow.active_customer == null, "Queue arrival releases browsing slot")
 	_check(variants == [0, 1, 2], "First three villagers have distinct appearances")
 	_check(left.fill_state() == ShopShelf.FillState.EMPTY and right.fill_state() == ShopShelf.FillState.EMPTY, "Shelf visuals read depleted stock")
-	_check(shop.inventory_ui.checkout_label.text == "Checkout: 3 / 3 waiting · Service coming later", "HUD explains queue and unavailable service")
+	_check(shop.inventory_ui.checkout_label.text == "Checkout: 3 / 3 waiting", "HUD shows unpaid checkout queue")
 	_check(shop.inventory_ui.checkout_label.get_global_rect().end.x <= root.get_visible_rect().size.x, "Checkout hint fits viewport")
 	_check(flow.spawn_customer() == null, "Full checkout prevents further visitors")
 	flow.arrivals_enabled = true

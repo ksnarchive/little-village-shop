@@ -4,7 +4,7 @@ extends CanvasLayer
 
 signal menu_visibility_changed(is_open: bool)
 
-enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF }
+enum View { CLOSED, BAG, STORAGE, SUPPLIER, SHELF, CHECKOUT }
 var view: View = View.CLOSED
 var _bag: Inventory
 var _storage: Inventory
@@ -14,6 +14,8 @@ var _prompt_text: String = ""
 @onready var panel: PanelContainer = %Panel
 @onready var inventory_content: VBoxContainer = %InventoryContent
 @onready var supplier_menu: SupplierMenu = %SupplierMenu
+@onready var checkout_menu: CheckoutMenu = %CheckoutMenu
+@onready var sales_label: Label = %SalesStatus
 @onready var shelf_menu: ShelfMenu = %ShelfMenu
 @onready var supplier_shade: ColorRect = %SupplierShade
 @onready var balance_card: PanelContainer = %BalanceCard
@@ -73,6 +75,25 @@ func configure_supplier(catalog: ItemCatalog, storage: Inventory, economy: ShopE
 func configure_shelves(catalog: ItemCatalog, bag: Inventory) -> void:
 	shelf_menu.configure(catalog, bag)
 
+func configure_checkout(flow: CustomerFlow, economy: ShopEconomy) -> void:
+	checkout_menu.configure(flow, economy)
+	economy.sales_changed.connect(_update_sales)
+	flow.sale_completed.connect(_sale_feedback)
+	_update_sales(economy.revenue, economy.completed_sales)
+
+func open_checkout() -> void:
+	checkout_menu.open_checkout()
+	_open(View.CHECKOUT)
+
+func _update_sales(revenue: int, sales: int) -> void:
+	sales_label.text = "Revenue: %d coins · Sales: %d" % [revenue, sales]
+
+func _sale_feedback(_item: ItemData, _customer: ShopCustomer) -> void:
+	var effect: Control = Control.new()
+	effect.set_script(preload("res://scripts/coin_effect.gd"))
+	$Root.add_child(effect)
+	effect.position = panel.position + Vector2(panel.size.x - 40, 84)
+
 func open_shelf(shelf: ShopShelf) -> void:
 	shelf_menu.open_shelf(shelf)
 	_open(View.SHELF)
@@ -90,10 +111,12 @@ func open_supplier() -> void:
 func _open(next_view: View) -> void:
 	view = next_view
 	checkout_label.hide()
+	sales_label.hide()
 	inventory_content.visible = view in [View.BAG, View.STORAGE]
 	shelf_menu.visible = view == View.SHELF
 	supplier_menu.visible = view == View.SUPPLIER
-	var has_shade := view in [View.SUPPLIER, View.SHELF]
+	checkout_menu.visible = view == View.CHECKOUT
+	var has_shade := view in [View.SUPPLIER, View.SHELF, View.CHECKOUT]
 	supplier_shade.visible = has_shade
 	balance_card.visible = not has_shade
 	controls_hint.visible = not has_shade
@@ -111,6 +134,7 @@ func close_menu() -> void:
 		return
 	view = View.CLOSED
 	checkout_label.show()
+	sales_label.show()
 	shelf_menu.release_shelf()
 	panel.hide()
 	supplier_shade.hide()
@@ -125,7 +149,7 @@ func set_prompt(text: String) -> void:
 	prompt_label.text = text if view == View.CLOSED else ""
 
 func set_checkout_waiting(waiting: int) -> void:
-	checkout_label.text = "Checkout: %d / 3 waiting · Service coming later" % waiting
+	checkout_label.text = "Checkout: %d / 3 waiting" % waiting
 
 func _update_balance(coins: int) -> void:
 	balance_label.text = "%d coins" % coins

@@ -3,6 +3,7 @@ extends Node2D
 ## One browsing visitor at a time; unpaid baskets stay in a bounded checkout queue.
 
 signal queue_changed(waiting: int)
+signal sale_completed(item: ItemData, customer: ShopCustomer)
 
 const MAX_CUSTOMERS: int = 3
 const ARRIVAL_INTERVAL: float = 7.0
@@ -15,6 +16,10 @@ const QUEUE_POSITIONS: Array[Vector2] = [Vector2(208, 260), Vector2(236, 260), V
 var shelves: Array[ShopShelf] = []
 var waiting: Array[ShopCustomer] = []
 var active_customer: ShopCustomer
+var departing_customer: ShopCustomer
+var service_menu_open: bool = false
+var economy: ShopEconomy
+var _serving: bool = false
 var catalog: ItemCatalog
 var rng := RandomNumberGenerator.new()
 var _arrival_time: float = 4.0
@@ -43,7 +48,7 @@ func configure(products: ItemCatalog, shop_shelves: Array[ShopShelf]) -> void:
 	queue_redraw()
 
 func _physics_process(delta: float) -> void:
-	if not arrivals_enabled or catalog == null or is_instance_valid(active_customer):
+	if service_menu_open or checkout_busy() or not arrivals_enabled or catalog == null or is_instance_valid(active_customer):
 		return
 	if waiting.size() >= MAX_CUSTOMERS:
 		return
@@ -52,7 +57,7 @@ func _physics_process(delta: float) -> void:
 		spawn_customer()
 
 func spawn_customer() -> ShopCustomer:
-	if catalog == null or is_instance_valid(active_customer) or waiting.size() >= MAX_CUSTOMERS:
+	if service_menu_open or checkout_busy() or catalog == null or is_instance_valid(active_customer) or waiting.size() >= MAX_CUSTOMERS:
 		return null
 	var scene: PackedScene = load("res://scenes/characters/customer.tscn")
 	var customer: ShopCustomer = scene.instantiate()
@@ -87,12 +92,73 @@ func join_checkout(customer: ShopCustomer) -> void:
 	queue_redraw()
 
 func finish_empty_visit(customer: ShopCustomer) -> void:
-	# There is deliberately no removal/service path for a customer holding goods.
 	if customer != active_customer or customer.basket.total_units() != 0:
 		return
 	active_customer = null
 	_arrival_time = ARRIVAL_INTERVAL
 	customer.queue_free()
+	queue_changed.emit(waiting.size())
+
+func checkout_busy() -> bool:
+	if _serving or is_instance_valid(departing_customer):
+		return true
+	for customer in waiting:
+		if customer.state == ShopCustomer.State.ADVANCING_IN_QUEUE:
+			return true
+	return false
+
+func can_customer_move(customer: ShopCustomer) -> bool:
+	if customer == departing_customer or customer.state == ShopCustomer.State.ADVANCING_IN_QUEUE:
+		return true
+	return not checkout_busy() and (not service_menu_open or customer == active_customer)
+
+func first_customer() -> ShopCustomer:
+	return waiting[0] if not waiting.is_empty() else null
+
+func basket_item(customer: ShopCustomer) -> ItemData:
+	if not is_instance_valid(customer) or customer.basket.total_units() != 1:
+		return null
+	for item in catalog.items:
+		if customer.basket.quantity(item.id) == 1:
+			return item
+	return null
+
+func can_serve(customer: ShopCustomer) -> bool:
+	var item := basket_item(customer)
+	# One moving visitor at a time: let an in-flight visit finish before departure.
+	return (not checkout_busy() and not is_instance_valid(active_customer) and is_instance_valid(customer)
+		and customer == first_customer() and customer.state == ShopCustomer.State.WAITING_AT_CHECKOUT
+		and economy != null and item != null and economy.can_sell(customer.basket, item.id))
+
+func serve_customer(customer: ShopCustomer) -> bool:
+	# Identity belongs to the displayed customer: stale clicks cannot serve the next.
+	if not can_serve(customer):
+		return false
+	_serving = true
+	var item := basket_item(customer)
+	waiting.pop_front()
+	departing_customer = customer
+	customer.prepare_paid_departure()
+	# Prevalidated; staging above emits no signals and cannot invalidate the sale.
+	economy.sell(customer.basket, item.id)
+	customer.state_changed.emit(customer.state)
+	queue_changed.emit(waiting.size())
+	sale_completed.emit(item, customer)
+	_serving = false
+	return true
+
+func finish_departure(customer: ShopCustomer) -> void:
+	if customer != departing_customer:
+		finish_empty_visit(customer)
+		return
+	if customer.basket.total_units() != 0:
+		return
+	departing_customer = null
+	customer.queue_free()
+	# Advance only after the paid visitor clears the lane. Distances stay constant.
+	for index in range(waiting.size()):
+		waiting[index].advance_in_queue(index)
+	queue_changed.emit(waiting.size())
 
 func _draw() -> void:
 	# Quiet floor markers make the checkout line legible before anyone arrives.

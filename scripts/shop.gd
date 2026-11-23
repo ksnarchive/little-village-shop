@@ -36,6 +36,9 @@ func _ready() -> void:
     inventory_ui.configure_supplier(CATALOG, storage.inventory, economy)
     inventory_ui.configure_shelves(CATALOG, player_inventory)
     customers.configure(CATALOG, [$LeftShelf, $RightShelf])
+    customers.economy = economy
+    inventory_ui.configure_checkout(customers, economy)
+    $Checkout.interacted.connect(_on_checkout_interacted)
     customers.queue_changed.connect(inventory_ui.set_checkout_waiting)
     for shelf: ShopShelf in [$LeftShelf, $RightShelf]:
         shelf.interacted.connect(_on_shelf_interacted.bind(shelf))
@@ -44,6 +47,10 @@ func _ready() -> void:
     interactions.target_changed.connect(_on_target_changed)
     inventory_ui.menu_visibility_changed.connect(_on_menu_visibility_changed)
     queue_redraw()
+
+func _on_checkout_interacted(actor: Node2D) -> void:
+    if actor == player:
+        inventory_ui.open_checkout()
 
 func _on_shelf_interacted(actor: Node2D, shelf: ShopShelf) -> void:
     if actor == player:
@@ -63,7 +70,10 @@ func _on_target_changed(target: Interactable) -> void:
 func _on_menu_visibility_changed(is_open: bool) -> void:
     player.controls_enabled = not is_open
     interactions.enabled = not is_open
-    customers.process_mode = Node.PROCESS_MODE_DISABLED if is_open else Node.PROCESS_MODE_INHERIT
+    # Checkout lets the active visit, paid departure and queue advance finish. Other menus
+    # preserve the existing complete pause of NPCs and arrival timers.
+    customers.service_menu_open = is_open and inventory_ui.view == InventoryMenu.View.CHECKOUT
+    customers.process_mode = Node.PROCESS_MODE_DISABLED if is_open and not customers.service_menu_open else Node.PROCESS_MODE_INHERIT
 
 func _solid(rect: Rect2) -> void:
     var body := StaticBody2D.new()
@@ -95,6 +105,10 @@ func _draw() -> void:
         draw_rect(Rect2(wx, 48, 32, 12), WINDOW)
         draw_line(Vector2(wx + 16, 48), Vector2(wx + 16, 60), WALL, 2)
     _fixture(fixtures[0], COUNTER, SHELF_DARK)
+    draw_rect(Rect2(198, 271, 20, 10), SHELF_DARK)
+    draw_rect(Rect2(201, 268, 14, 7), Color("#61734f"))
+    draw_rect(Rect2(203, 269, 10, 3), Color("#d9dfbc"))
+    draw_rect(Rect2(201, 277, 14, 2), Color("#d8bf86"))
     # Small flowers outside.
     for p in [Vector2(96, 80), Vector2(544, 110), Vector2(110, 275), Vector2(540, 275)]:
         draw_circle(p, 5, Color("#f1deb7"))
