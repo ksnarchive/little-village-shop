@@ -336,6 +336,10 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   over HTTP. Both completed `web/smoke.cjs` with **no JavaScript, HTTP, WebGL or
   engine errors**. A fresh mobile context (844×390 CSS px, DPR 3) taps New Game,
   uses the external D-pad/E/I/Esc and taps the real Godot menu buttons.
+- An initial CI browser run reached checkout while the first visitor was still
+  walking; its one premature service tap was correctly rejected and saving remained
+  blocked. The browser runner now keeps checkout open and retries service while that
+  visit settles, retaining the existing gameplay guards and asserting exactly one sale.
 - The browser scenario buys one apple (**100 → 97 coins**), takes three apples
   through storage to bag, stocks one, waits for the production clock/real NPC,
   serves that apple (**97 → 102**, revenue **5**, sales **1**), waits for the paid

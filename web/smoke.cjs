@@ -84,7 +84,13 @@ async function check(name) {
     // Let the real clock reach 09:00 and the first real visitor reach the counter.
     await wait(45000);
     await action('KeyE'); await capture('checkout-before');
-    await tap(320, 250); // Serve. The final persisted state proves a real sale occurred.
+    // The first visitor can still be walking on a slower CI renderer. Checkout
+    // deliberately lets that visit finish; rejected taps must not create sales.
+    // Keep the menu open (blocking new arrivals) and serve once it becomes ready.
+    for (let attempt = 0; attempt < 20; attempt++) {
+      await tap(320, 250);
+      await wait(500);
+    }
     await wait(9000); await capture('checkout-after');
     await action('Escape'); await action('Escape'); await tap(320, 192);
     await capture('saved');
