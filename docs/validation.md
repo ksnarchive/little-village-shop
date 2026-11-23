@@ -344,7 +344,11 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   neighbouring object instead of storage. The runner now locates the actual shopkeeper
   pixels using the committed atlas and steers via held on-screen buttons to each
   approach point. It reads rendered images, never gameplay/debug state. The WebKit
-  replay of this navigation plus the full persistence scenario passed.
+  replay of this navigation plus the full persistence scenario passed. A separate
+  PR replay admitted a new empty-handed visitor in the gap between closing checkout
+  and opening pause; the sale succeeded and saving was correctly disabled. The final
+  runner also waits visually for the enabled save button, allowing the real visitor
+  to leave between pause checks before persisting the exact expected sale state.
 - The browser scenario buys one apple (**100 → 97 coins**), takes three apples
   through storage to bag, stocks one, waits for the production clock/real NPC,
   serves that apple (**97 → 102**, revenue **5**, sales **1**), waits for the paid

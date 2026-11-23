@@ -136,7 +136,23 @@ async function check(name) {
       await wait(500);
     }
     await wait(9000); await capture('checkout-after');
-    await action('Escape'); await action('Escape'); await tap(320, 192);
+    await action('Escape'); await action('Escape');
+    // Closing checkout can admit the next empty-handed visitor before pause opens.
+    // Respect the real empty-shop save guard instead of relying on that frame timing.
+    let saveReady = false;
+    for (let attempt = 0; attempt < 40; attempt++) {
+      saveReady = await page.evaluate(async () => {
+        const img = new Image(); img.src = document.getElementById('canvas').toDataURL(); await img.decode();
+        const surface = document.createElement('canvas'); surface.width = 640; surface.height = 360;
+        const ctx = surface.getContext('2d'); ctx.drawImage(img, 0, 0);
+        const [r, g, b] = ctx.getImageData(130, 194, 1, 1).data;
+        return r < 180 && g > r && b < 160; // Enabled sage save button, not disabled cream.
+      });
+      if (saveReady) break;
+      await action('Escape'); await wait(500); await action('Escape');
+    }
+    assert(saveReady, `${name}: shop did not become empty for manual saving`);
+    await tap(320, 192);
     await capture('saved');
     const data = await awaitSave(data => data.economy.completed_sales === '1');
     assert.equal(data.economy.balance, '102');
