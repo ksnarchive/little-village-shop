@@ -6,10 +6,13 @@ var walking: bool = false
 var step_time: float = 0.0
 
 func _physics_process(delta: float) -> void:
-    var direction := Vector2.ZERO
-    direction.x = Input.get_axis("ui_left", "ui_right")
-    direction.y = Input.get_axis("ui_up", "ui_down")
-    direction = direction.normalized()
+    # Physical keys work on non-English keyboard layouts, too.
+    var direction := Vector2(
+        float(Input.is_physical_key_pressed(KEY_D) or Input.is_action_pressed("ui_right")) -
+        float(Input.is_physical_key_pressed(KEY_A) or Input.is_action_pressed("ui_left")),
+        float(Input.is_physical_key_pressed(KEY_S) or Input.is_action_pressed("ui_down")) -
+        float(Input.is_physical_key_pressed(KEY_W) or Input.is_action_pressed("ui_up"))
+    ).normalized()
     velocity = direction * SPEED
     walking = direction.length_squared() > 0.0
     if walking:
