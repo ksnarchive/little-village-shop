@@ -94,3 +94,42 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   Touch/gamepad controls and persistent game saves remain pending. Shelf stock resets
   on restart; no customers, selling/checkout behavior, day cycle or other large systems
   were added.
+
+## First customers milestone
+
+- Started from `feat/shelf-restocking` at
+  `9fd68c7cabe9567d0ceb59d65e830e8dd10dc0ad`. PR #3 is still open; the customer
+  PR targets that branch and contains only this milestone. No merges to main.
+- Rechecked the baseline with official **Godot 4.3.stable.official.77dcf97d8**:
+  editor import, **187 checks, zero failures**, and main-scene smoke run.
+- The same Godot 4.3 now passes editor import, all **187 existing checks**,
+  **61 additional customer checks**, and the 60-frame main-scene smoke run through
+  `bash tests/run_checks.sh`. The runner still rejects logged engine/script errors.
+- The dedicated customer suite instantiates the real main scene and simulates complete
+  visits at fixed 60 Hz. It covers entry, delayed search, both shelf approaches,
+  mixed-product pickup, movement to distinct checkout slots, permanent unpaid waiting,
+  and empty-handed departure. Every simulated physics frame checks conservation of
+  the original 13 demo goods; movement checks reject jumps and furniture collisions.
+- Coverage includes player withdrawal while an NPC approaches a shelf, retrying another
+  shelf, leaving when none remains, atomic pickup signal observations, empty one-unit
+  baskets, queue admission limits, repeated automatic arrivals, timer/movement pause
+  during menus, HUD fit, three appearance variants and resetting the scene.
+- Graphical check on Linux with the same official **Godot 4.3**, Compatibility renderer
+  (software Mesa): used actual arrow/E input to visit storage, took one apple, bread and
+  milk, then walked around the storage to the orchard shelf and stocked all three using
+  the existing buttons. Open menus paused visitor movement. After closing the menu,
+  observed visitors carrying goods through the central aisle to the counter. The final
+  view showed three distinct villagers, three product bubbles, an empty orchard shelf,
+  queue 3/3 and an unchanged 100-coin balance. The pantry remained empty.
+- Captured the [game canvas with the completed checkout queue](customers-checkout.png),
+  cropped from the game window and enlarged 2× with nearest-neighbor scaling. No
+  gameplay state or visual elements were added to the image.
+- The graph is authored for the existing fixed furniture layout. One visitor browses
+  while up to three wait, so moving visitors never cross occupied queue slots. NPCs
+  collide with static furniture, but intentionally do not block the player or E rays.
+  Changing the room layout requires revisiting route anchors and physical validation.
+- Checkout service, payment, impatience, day cycles and persistent saves are not part
+  of this milestone. Unpaid goods remain in NPC inventories until the scene resets;
+  full queues stop arrivals. This short Linux graphical check is not a Windows build,
+  touch-input check, or exhaustive resolution sweep. The environment has no audio
+  device; Godot used its dummy-audio fallback during the graphical check.

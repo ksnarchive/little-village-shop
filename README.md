@@ -30,7 +30,19 @@ A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Wi
 The bag starts empty (24-unit capacity). Storage holds 6 apples, 4 bread and 3 milk
 (60-unit capacity) as **free demo stock**. Restarting resets inventory and balance.
 Both shelves start empty, each with its own **12-unit capacity** shared across products.
-The checkout remains decorative.
+Visitors arrive automatically at the south doorway (first after 4 seconds). They walk
+into the central aisle, look for stocked shelves, choose one available product and carry it
+in a small basket to the checkout. Empty-handed visitors walk back out; if the player empties
+a target shelf en route, they search again or leave. Stock the shelves using the existing
+storage → bag → shelf flow to see a successful visit.
+
+Three villagers have different coats, hair and headwear in the same original pixel style.
+A product bubble shows the goods being carried; floor marks and a HUD counter explain the
+checkout queue. One visitor browses at a time, with a 7-second gap after a completed visit.
+Up to three customers wait at distinct checkout positions. Arrivals stop when all three
+places are occupied. **There is no payment or checkout service yet**: customers and their
+unpaid goods remain at the counter until restart. Open menus pause visitors and arrival
+timers alongside the shopkeeper.
 
 ## Run
 
@@ -52,11 +64,13 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/order_desk.gd`, `scenes/objects/order_desk.tscn` | Order desk appearance, collision and interaction point |
 | `scripts/shelf.gd`, `scenes/objects/shelf.tscn` | Reusable shelf, independent Inventory, original collision footprint and stock-driven pixel art |
 | `scripts/shelf_menu.gd`, `scenes/ui/shelf_menu.tscn` | Quantity selection and validated bag ↔ shelf transfers in the shared modal UI |
+| `scripts/customer.gd`, `scenes/characters/customer.tscn` | Visitor FSM, continuous physics movement, one-unit unpaid basket and three original villager appearances |
+| `scripts/customer_flow.gd` | Bounded arrivals, authored AStar2D aisle routes, shelf discovery and three checkout positions |
 | `scripts/shop_economy.gd` | Balance and validated supplier purchases |
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
 | `assets/items/` | Original SVG icons composed on a 16×16 pixel grid |
-| `tests/run_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration and smoke checks |
+| `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
 
 Inventory capacity counts **total units**, not slots. Each product has one stack limited by
 `max_stack_size`. Rejected operations change nothing and emit no change notification.
@@ -74,6 +88,18 @@ Shelf menus and world icons also use this catalog. A shelf owns an `Inventory`; 
 Configure `capacity` and `display_name` on each instance of `scenes/objects/shelf.tscn`.
 Shelf capacity is shared across all products, with no extra product/category restriction.
 The six visible product positions represent occupancy, rather than a one-icon-per-unit count.
+
+Customer goods move with the existing atomic `Inventory.transfer_to()` into each NPC's
+one-unit `basket`; nothing is sold, deleted or copied when they reach checkout. Stock is
+read again on arrival rather than reserved during route planning. NPCs use shelf interaction
+positions as approach anchors without opening the player's interaction menus. The authored
+`AStar2D` graph connects the doorway, foyer, central aisle, shelf fronts and checkout slots.
+It is designed for this fixed room; moving furniture requires updating routes and rerunning
+the physics tests. Visitors collide with walls/furniture, and do not block player movement
+or E-interaction rays. Only one moving shopper is admitted, so checkout arrivals do not
+cross occupied queue slots or compete for narrow shelf approaches.
+
+Customer preview: [three villagers waiting at checkout](docs/customers-checkout.png).
 
 Shelf previews: [restocking menu](docs/shelf-menu.png) · [stocked shelf in the room](docs/shelf-stock.png).
 
@@ -94,16 +120,21 @@ wall/furniture collisions, range/obstruction, physical E/I/Esc input, movement b
 successful and rejected supplier orders, balance and stock updates, and shelf deposits and
 withdrawals, mixed-product capacity, independent shelf inventories, fill-state transitions,
 full-bag rejection, quantity clamping, modal controls and viewport fit.
-A main-scene smoke run follows the tests.
+Customer checks additionally cover empty visits, all FSM transitions, both stocked shelves,
+mixed products, stale stock and alternate-shelf recovery, automatic arrivals, bounded queues,
+modal pause/resume, distinct villager appearances, HUD fit and restart. They simulate whole
+visits with real physics, checking collision-free continuous motion and conservation of all
+goods on every physics frame, including atomic transfer notifications. Waiting does not
+change coins, consume goods or remove customers. A main-scene smoke run follows the tests.
 
 Headless results do not establish visual quality or Windows compatibility. See
 [`docs/validation.md`](docs/validation.md) for this milestone's actual verification and limitations.
 
 ## Next milestones
 
-1. Customer navigation/FSM and checkout queue.
+1. Checkout service/payment (separate future milestone).
 2. Day cycle, reports and versioned game saves.
 3. Original art/audio, broader desktop testing and Windows export.
 
-The current procedural room is preserved; no village, customer or checkout systems have been added.
+The current procedural room is preserved; village expansion, checkout service and day systems remain future work.
 All current graphics are original project placeholders; no commercial game assets are used.
