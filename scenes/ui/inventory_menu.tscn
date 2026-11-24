@@ -29,7 +29,7 @@ theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
 theme_override_colors/font_shadow_color = Color(0.2, 0.15, 0.1, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
-text = "WASD / Arrows  Move    E  Interact    I  Bag    Esc  Pause"
+text = "WASD / стрелки — идти     I — рюкзак     Esc — меню"
 
 [node name="CheckoutStatus" type="Label" parent="Root"]
 unique_name_in_owner = true
@@ -40,19 +40,19 @@ theme_override_colors/font_shadow_color = Color(0.2, 0.15, 0.1, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 12
-text = "Checkout: 0 / 3 waiting"
+text = "В очереди: 0 / 3"
 mouse_filter = 2
 
 [node name="SalesStatus" type="Label" parent="Root"]
 unique_name_in_owner = true
 offset_left = 12.0
-offset_top = 25.0
+offset_top = 31.0
 theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
 theme_override_colors/font_shadow_color = Color(0.2, 0.15, 0.1, 1)
 theme_override_constants/shadow_offset_x = 1
 theme_override_constants/shadow_offset_y = 1
 theme_override_font_sizes/font_size = 12
-text = "Revenue: 0 coins · Sales: 0"
+text = "Выручка 0 · Продаж 0"
 mouse_filter = 2
 
 [node name="Prompt" type="Label" parent="Root"]
@@ -62,8 +62,10 @@ anchors_preset = 12
 anchor_top = 1.0
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_top = -36.0
-offset_bottom = -8.0
+anchor_left = 0.30
+anchor_right = 0.70
+offset_top = -54.0
+offset_bottom = -26.0
 grow_horizontal = 2
 grow_vertical = 0
 theme_override_colors/font_color = Color(0.945, 0.871, 0.718, 1)
@@ -81,7 +83,7 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.19, 0.15, 0.11, 0.42)
+color = Color(0.28, 0.25, 0.21, 0.46)
 
 [node name="BalanceCard" type="PanelContainer" parent="Root"]
 unique_name_in_owner = true
@@ -104,11 +106,11 @@ horizontal_alignment = 1
 [node name="ClockCard" type="PanelContainer" parent="Root"]
 unique_name_in_owner = true
 layout_mode = 0
-offset_left = 280.0
+offset_left = 366.0
 offset_top = 8.0
-offset_right = 505.0
+offset_right = 500.0
 mouse_filter = 2
-theme_type_variation = &"BalanceCard"
+theme_type_variation = &"ClockCard"
 
 [node name="Labels" type="VBoxContainer" parent="Root/ClockCard"]
 layout_mode = 2
@@ -118,12 +120,13 @@ mouse_filter = 2
 [node name="Clock" type="Label" parent="Root/ClockCard/Labels"]
 unique_name_in_owner = true
 layout_mode = 2
+theme_override_font_sizes/font_size = 16
 horizontal_alignment = 1
 
 [node name="DayPhase" type="Label" parent="Root/ClockCard/Labels"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 11
+theme_override_font_sizes/font_size = 12
 horizontal_alignment = 1
 
 [node name="Center" type="CenterContainer" parent="Root"]
@@ -154,7 +157,7 @@ theme_override_constants/separation = 8
 unique_name_in_owner = true
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
-text = "Your bag"
+text = "Рюкзак"
 
 [node name="Capacity" type="Label" parent="Root/Center/Panel/Content/InventoryContent"]
 unique_name_in_owner = true
@@ -168,7 +171,7 @@ theme_override_constants/separation = 6
 [node name="Message" type="Label" parent="Root/Center/Panel/Content/InventoryContent"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Visit storage to collect or return goods."
+text = "Товары можно взять в кладовой."
 
 [node name="SupplierMenu" parent="Root/Center/Panel/Content" instance=ExtResource("2")]
 unique_name_in_owner = true
@@ -185,7 +188,7 @@ layout_mode = 2
 [node name="Close" type="Button" parent="Root/Center/Panel/Content"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Close  [Esc / I]"
+text = "Закрыть  [Esc / I]"
 
 [node name="DayReport" parent="Root/Center/Panel/Content" instance=ExtResource("5")]
 unique_name_in_owner = true

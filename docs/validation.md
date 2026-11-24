@@ -268,3 +268,136 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   not migrated. Temp/backup/atomic rename protect against checked I/O failures and interrupted
   replacement; Godot FileAccess does not expose a portable directory-fsync guarantee for
   sudden power loss. Windows runtime/export and touch/gamepad remain unverified.
+
+## Stage 8 — visual shop makeover
+
+- Started from merged `main` at `c3ffe7b0e638a06780a2fc1715b7d4fd1ae7d32f`
+  (PRs #1–#7), rechecked against the remote before publishing. Separate branch:
+  `stage-8-cozy-shop`. The original project and architecture are reused.
+- Created nine original native-grid PNG textures with committed, reproducible
+  [authoring source](../tools/build_shop_art.py): room/floor/walls, four fixtures,
+  three products and a coordinated villager atlas. No third-party game art or fonts.
+  See [art notes](../assets/README.md) for palette, dimensions, atlas and regeneration.
+- Furniture scene transforms, collision shapes, room solids, interaction offsets,
+  capacities, customer routes, speeds and transaction/save logic remain unchanged.
+  The camera is now fixed at (320,180) so the full room remains visible when walking.
+  The top clock card is compact enough to clear the north wall. Added two regression
+  checks for whole-room framing at spawn and after real player movement.
+- Official **Godot 4.3.stable.official.77dcf97d8**, `tests/run_checks.sh`: editor import,
+  **189 inventory/scene/input + 61 customer + 72 checkout + 80 day + 127 save checks**
+  (**529 total, zero failures**), followed by the 60-frame startup-menu smoke run.
+  No logged engine/script errors or resource-leak warnings in the final complete runner.
+  This retains the existing three-workday and save-failure/recovery coverage.
+- Graphical Linux rendering uses the same official Godot 4.3, **Compatibility / Mesa
+  llvmpipe**. Opened the real application menu and New Game on the shared desktop and
+  inspected the room. After that desktop session disconnected, final reproducible
+  captures used a separate native Xorg dummy display and the committed
+  [graphical review runner](../tools/capture_shop.gd), not Godot's headless renderer.
+- Real, unmodified **1280×720 game-window viewport captures**, native 640×360 canvas
+  at integer **2×**: [whole shop](stage-8-shop-overview.png),
+  [stocked shelves and three customers](stage-8-stocked-customers.png),
+  [storage UI](stage-8-storage-menu.png). No post-processing, compositing, invented
+  visual elements or screenshot enlargement. Inspected the final images for whole-room
+  framing, readable goods/stock indicators, three distinct villagers, clear approaches
+  and UI fit. Older screenshots elsewhere in this document belong to earlier stages.
+- The capture runner freezes the clock at 08:00 for the overview, then uses production
+  purchases (2 apples, 4 bread, 5 milk; **61 coins**), transfers the existing demo stock
+  plus deliveries through storage → bag → both shelves (4 of each product per shelf),
+  sets the review clock to noon and waits for three normal physics-driven visits.
+  Final balance is **39**, queue **3/3**, revenue/sales **0**; three unpaid units are in
+  NPC baskets, with the remaining 21 on shelves. No save file is read or written.
+- Verified regeneration produces identical hashes for all nine PNGs. In both final
+  world captures, the interior art below the HUD repeats exactly on the 2× pixel grid
+  (compared native downsample/repeat bytes); UI text retains Godot font rasterization.
+- Nearest filtering and integer scaling retained; lossless PNG import has no mipmaps.
+  Transform snapping only affects rendering. Product UI icons are 16px/32px, never
+  fractional 20px. Four directions and idle/two walk frames share a single 24×32 grid.
+  Stepped fixture shadows and window light accents are authored in the art and work
+  in Compatibility without dynamic light or shader requirements. Decor adds no solids.
+- Runtime limits: Linux graphical check, not Windows export or exhaustive hardware/
+  resolution testing. Dummy audio is used on this machine. Mesa reports unsupported
+  V-Sync switching; this environment warning does not prevent rendering or capture.
+  No new mechanics, locations, audio, save schema or migration were introduced.
+
+## Web / iPhone browser version
+
+- Branch `web-iphone-safari` starts at `stage-8-cozy-shop` **b187800**, including
+  the original updated interior from PR #8. PR #9 targets that branch; neither PR
+  has been merged into main. No gameplay, NPC, location or save-schema additions.
+- Official **Godot 4.3.stable.official.77dcf97d8**, final `tests/run_checks.sh`:
+  editor import, **189 + 61 + 72 + 80 + 127 = 529 checks, zero failures**, followed
+  by the 60-frame startup smoke. No logged engine/script errors. Existing native
+  keyboard/input, complete workdays, NPC routes, save failure/recovery checks pass.
+- Release `Web` export succeeds with 4.3 export templates, no engine/script errors.
+  Compatibility/WebGL 2, single-threaded, no GDExtension/PWA/service worker/COOP/COEP.
+  The release pack is about 116 KiB and the uncompressed engine wasm about 34 MiB;
+  hosting compression is separate. Documentation/tools/tests are excluded.
+- **Playwright 1.62.1, Linux Chromium and WebKit 26.5**, real release export served
+  over HTTP. Both completed `web/smoke.cjs` with **no JavaScript, HTTP, WebGL or
+  engine errors**. A fresh mobile context (844×390 CSS px, DPR 3) taps New Game,
+  uses the external D-pad/E/I/Esc and taps the real Godot menu buttons.
+- An initial CI browser run reached checkout while the first visitor was still
+  walking; its one premature service tap was correctly rejected and saving remained
+  blocked. The browser runner now keeps checkout open and retries service while that
+  visit settles, retaining the existing gameplay guards and asserting exactly one sale.
+  An additional slow-renderer replay showed fixed-duration walking could reach the
+  neighbouring object instead of storage. The runner now locates the actual shopkeeper
+  pixels using the committed atlas and steers via held on-screen buttons to each
+  approach point. It reads rendered images, never gameplay/debug state. The WebKit
+  replay of this navigation plus the full persistence scenario passed. A separate
+  PR replay admitted a new empty-handed visitor in the gap between closing checkout
+  and opening pause; the sale succeeded and saving was correctly disabled. The final
+  runner also waits visually for the enabled save button, allowing the real visitor
+  to leave between pause checks before persisting the exact expected sale state.
+- The browser scenario buys one apple (**100 → 97 coins**), takes three apples
+  through storage to bag, stocks one, waits for the production clock/real NPC,
+  serves that apple (**97 → 102**, revenue **5**, sales **1**), waits for the paid
+  exit and saves from pause. IndexedDB contains bag **2 apples**, storage **4 apples**,
+  empty orchard shelf and correct economy. Reload → Play → Continue → manual save
+  proves the restored game has identical inventories/accounting and advancing time.
+  No game-state/debug hooks, accelerated clock or fake customer is used.
+- The same test checks bounds of the entire canvas and all seven external buttons
+  at **390×844 portrait, 667×375 landscape and 844×300 landscape**, in addition to
+  844×390. Portrait displays a rotation hint; landscape is recommended for legibility.
+  Native web buttons have 44×44 minimums; the catalog retains vertical scrolling.
+- Separate real Chromium CDP touch events verified **two held directions plus E**
+  concurrently, `touchCancel` clearing all held buttons, and blur clearing a held
+  direction. This supplementary check used an external local harness. A raw native
+  640×360 canvas capture was compared with the source room PNG: floor region
+  `(250,80)-(290,150)` is byte-identical in RGB. Presentation-buffer antialiasing
+  does not soften the native interior texture; nearest scaling is retained.
+- WebKit originally logged `glBlitFramebuffer` attachment alias errors. Creating
+  a multisampled presentation context before engine initialization resolved them;
+  both final full browser scenarios passed without filtering or suppressing logs.
+  The internal Web viewport remains fixed 640×360, with no 2D MSAA or texture blur.
+  Linux WebKit used locally extracted official Debian libraries in its own browser
+  bundle; no OS package/security settings were changed.
+- Real unmodified CSS-resolution browser captures from WebKit:
+  [mobile interior](web-mobile-shop.png), [saved game](web-mobile-save.png).
+  Full workflow screenshots and logs are uploaded as `browser-validation`.
+  The shared visible Chrome lacks WebGL 2; it correctly showed the launch error
+  message. Positive rendering/gameplay checks above used headless software WebGL.
+- **Not tested on a physical iPhone or actual iOS Safari.** Linux WebKit shares the
+  browser engine but does not reproduce Apple GPU/drivers, iPhone memory limits,
+  browser chrome/safe-area hardware, system gestures or tab eviction. Safari device
+  performance and persistence after OS termination remain unverified. Ordinary reload
+  persistence, mobile input and bounds are verified in both available engines.
+- **Publication is blocked by repository configuration.** Pages creation through
+  the connected GitHub identity returned **403 Resource not accessible by integration**;
+  the intended public URL returned **404**. No public playable URL is claimed.
+  [Phone-only Pages setup and retry instructions](web-iphone.md#включение-github-pages-с-iphone)
+  explain Source = GitHub Actions, the environment branch rule and rerunning deploy.
+  The workflow uploads the tested artifact and verifies public `build-info.json`
+  against its exact commit after a successful deployment. Until that step succeeds,
+  publication of the new interior on GitHub Pages remains unverified.
+
+- Continuous release gate: `npm test` now checks real startup, touch D-pad/menus,
+  manual IndexedDB save, reload/Continue and viewport bounds in both browsers during
+  preparation. All 529 native logic/scene tests still run on every build. The longer
+  `npm run test:gameplay` remains available separately; visual recognition can be
+  interrupted by overlapping actors and real-time visitor admission. Both complete
+  browser gameplay scenarios passed in [CI run 45276534925](https://github.com/ksnarchive/little-village-shop/actions/runs/45276534925)
+  on `461d7d8`; the production game/scripts/settings/export/shell have not changed since
+  that verified build. Optional timing-sensitive gameplay automation does not gate
+  publication. Its intermittent failures are test-runner limitations, not evidence
+  of a Safari-device verification.

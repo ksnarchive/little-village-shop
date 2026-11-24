@@ -97,7 +97,7 @@ func _days(store: SaveStore, shop: Node2D) -> void:
 		var morning := store.capture(shop)
 		check(store.read_save(shop) == json_form(morning) and shop.day.minute == 480 and shop.economy.day_expenses == 0, "Morning autosave resets only daily totals")
 		check(store.load_game(shop) and store.capture(shop) == morning and shop.inventory_ui.view == InventoryMenu.View.CLOSED, "Morning restore refreshes menus")
-		check(shop.inventory_ui.balance_label.text == "%d coins" % (100 - number) and shop.inventory_ui.clock_label.text.contains("08:00"), "Loaded HUD refreshes")
+		check(shop.inventory_ui.balance_label.text == "%d монет" % (100 - number) and shop.inventory_ui.clock_label.text.contains("08:00"), "Loaded HUD refreshes")
 		check(not shop.day.paused and shop.player.controls_enabled, "Morning load resumes clock and controls")
 
 func _failure_cases(store: SaveStore, shop: Node2D) -> void:

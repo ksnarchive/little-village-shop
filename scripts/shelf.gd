@@ -6,7 +6,8 @@ enum FillState { EMPTY, PARTIAL, FULL }
 
 @export var catalog: ItemCatalog
 @export var capacity: int = 12
-@export var display_name: String = "Shop shelf"
+@export var display_name: String = "Полка"
+@export_enum("shelf", "pantry") var palette: String = "shelf"
 var inventory: Inventory
 
 func _ready() -> void:
@@ -21,12 +22,7 @@ func fill_state() -> FillState:
 	return FillState.FULL if inventory.total_units() == inventory.capacity else FillState.PARTIAL
 
 func _draw() -> void:
-	# Keep the original 64x48 footprint and wood palette, on whole pixels.
-	draw_rect(Rect2(-32, -24, 64, 48), Color("#765238"))
-	draw_rect(Rect2(-29, -21, 58, 42), Color("#b78b59"))
-	for y in [-20, 0]:
-		draw_rect(Rect2(-27, y, 54, 17), Color("#9d7455"))
-		draw_rect(Rect2(-27, y + 16, 54, 3), Color("#d8a15f"))
+	draw_texture(preload("res://assets/shop/pantry.png") if palette == "pantry" else preload("res://assets/shop/shelf.png"), Vector2(-32, -32))
 	if inventory == null:
 		return
 	var total := inventory.total_units()
@@ -47,7 +43,7 @@ func _draw() -> void:
 				break
 			unit_index -= count
 	# A small stock meter stays legible when looking at the shop from afar.
-	draw_rect(Rect2(-25, 20, 50, 2), Color("#513a31"))
+	draw_rect(Rect2(-25, 20, 50, 2), Color("#51483F"))
 	if total > 0:
 		var width := maxi(1, floori(50.0 * total / inventory.capacity))
-		draw_rect(Rect2(-25, 20, width, 2), Color("#9daf84"))
+		draw_rect(Rect2(-25, 20, width, 2), Color("#BCC5AC"))

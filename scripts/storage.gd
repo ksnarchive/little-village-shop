@@ -14,6 +14,4 @@ func _ready() -> void:
 		push_error("Storage initial stock is invalid; inventory left empty.")
 
 func _draw() -> void:
-	# Preserve the existing green storage fixture's footprint and palette.
-	draw_rect(Rect2(-32, -16, 64, 32), Color("#765238"))
-	draw_rect(Rect2(-29, -13, 58, 26), Color("#8dab78"))
+	draw_texture(preload("res://assets/shop/storage.png"), Vector2(-32, -22))

@@ -1,0 +1,122 @@
+name: Web build and GitHub Pages
+
+on:
+  push:
+    branches: [web-iphone-safari, main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: web-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: chickensoft-games/setup-godot@v2
+        with:
+          version: 4.3.0
+          use-dotnet: false
+          include-templates: true
+          cache: true
+      - name: Run all existing Godot checks
+        run: bash tests/run_checks.sh
+      - name: Export single-threaded Web release
+        shell: bash
+        run: |
+          set -euo pipefail
+          mkdir -p builds/web
+          godot --headless --path . --export-release Web builds/web/index.html 2>&1 | tee builds/export.log
+          if grep -Eq 'SCRIPT ERROR:|(^|[[:space:]])ERROR:' builds/export.log; then exit 1; fi
+          test -s builds/web/index.wasm
+          test -s builds/web/index.pck
+          touch builds/web/.nojekyll
+          python3 - <<'PY'
+          import json, os, pathlib
+          pathlib.Path('builds/web/build-info.json').write_text(json.dumps({
+              'commit': os.environ['GITHUB_SHA'], 'ref': os.environ['GITHUB_REF'],
+              'godot': '4.3.stable', 'interior_base': 'b187800eaea9ce6aa1fdbd80cb8841b8314e34b9',
+              'thread_support': False
+          }, indent=2) + '\n')
+          PY
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: web/package-lock.json
+      - name: Install browser checks
+        working-directory: web
+        run: |
+          npm ci
+          npx playwright install --with-deps chromium webkit
+      - name: Browser startup, touch and persistence checks
+        shell: bash
+        run: |
+          python3 -m http.server 8060 --bind 127.0.0.1 --directory builds/web > builds/http.log 2>&1 &
+          server_pid=$!
+          trap 'kill "$server_pid"' EXIT
+          for attempt in {1..30}; do
+            if curl -fsS http://127.0.0.1:8060/ > /dev/null; then break; fi
+            sleep 1
+          done
+          cd web
+          npm test
+      - name: Upload browser captures and logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: browser-validation
+          path: |
+            builds/browser-checks
+            builds/*.log
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: builds/web
+
+  deploy:
+    # Publish this branch before either PR is merged. PR builds never deploy.
+    if: github.event_name != 'pull_request' && (github.ref == 'refs/heads/web-iphone-safari' || github.ref == 'refs/heads/main')
+    needs: build
+    runs-on: ubuntu-24.04
+    permissions:
+      pages: write
+      id-token: write
+    concurrency:
+      group: github-pages
+      cancel-in-progress: false
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Check Pages configuration (Settings → Pages → GitHub Actions)
+        uses: actions/configure-pages@v5
+      - name: Deploy tested build
+        id: deployment
+        uses: actions/deploy-pages@v4
+      - name: Verify public build matches this commit
+        env:
+          PAGE_URL: ${{ steps.deployment.outputs.page_url }}
+        run: |
+          python3 - <<'PY'
+          import json, os, time, urllib.request
+          base = os.environ['PAGE_URL'].rstrip('/')
+          for attempt in range(12):
+              try:
+                  with urllib.request.urlopen(base + '/build-info.json?sha=' + os.environ['GITHUB_SHA'], timeout=20) as response:
+                      data = json.load(response)
+                  assert data['commit'] == os.environ['GITHUB_SHA'], data
+                  with urllib.request.urlopen(base + '/', timeout=20) as response:
+                      assert b'Little Village Shop' in response.read()
+                  print('Verified public build:', data)
+                  break
+              except Exception:
+                  if attempt == 11: raise
+                  time.sleep(5)
+          PY

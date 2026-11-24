@@ -1,6 +1,6 @@
 class_name Shopkeeper
 extends CharacterBody2D
-## Keyboard-controlled shopkeeper. No external art required.
+## Keyboard-controlled shopkeeper with the shared original villager atlas.
 const SPEED: float = 95.0
 var facing: Vector2 = Vector2.DOWN
 var walking: bool = false
@@ -29,19 +29,4 @@ func _physics_process(delta: float) -> void:
     queue_redraw()
 
 func _draw() -> void:
-    # Shadow, boots, body, hair and face: deliberately tiny pixel-art shapes.
-    draw_ellipse_shadow()
-    var bob := 1.0 if walking and sin(step_time) > 0.0 else 0.0
-    draw_rect(Rect2(-5, 5 + bob, 4, 5), Color("#4e4139"))
-    draw_rect(Rect2(1, 5 - bob, 4, 5), Color("#4e4139"))
-    draw_rect(Rect2(-7, -4, 14, 11), Color("#668568"))
-    draw_rect(Rect2(-5, -12, 10, 10), Color("#e8b88f"))
-    draw_rect(Rect2(-6, -14, 12, 5), Color("#513a31"))
-    draw_rect(Rect2(-6, -11, 3, 5), Color("#513a31"))
-    draw_rect(Rect2(3, -11, 3, 5), Color("#513a31"))
-    if facing.y >= -0.3:
-        draw_rect(Rect2(-3, -7, 2, 2), Color("#49382d"))
-        draw_rect(Rect2(2, -7, 2, 2), Color("#49382d"))
-
-func draw_ellipse_shadow() -> void:
-    draw_circle(Vector2(0, 10), 7.0, Color(0.2, 0.15, 0.1, 0.22))
+    VillagerArt.draw_actor(self, 0, facing, walking, step_time)

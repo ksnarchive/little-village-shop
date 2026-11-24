@@ -1,10 +1,26 @@
 # 🌿 Little Village Shop
 
-A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows.
+A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows and Web (iPhone Safari).
+
+## Autumn vintage shop (art refinement)
+
+![Current vintage shop — real Web release capture](docs/vintage-shop.png)
+
+The current art continues `feat/pastel-retro-shop` (PR #10): a worn but welcoming
+1960s–1970s village shop, with faded cream wallpaper, warm scratched boards,
+olive and grey-blue painted displays, walnut trim and terracotta accents.
+Peeling paper, chipped furniture, dusty boxes, a cracked jug and broken stool
+sit alongside soft pixel sunlight, autumn trees and a faded blue rug.
+Cream notebook panels have binding stitches, ink borders and muted buttons.
+The Russian UI, chibi silhouettes, close camera, mobile controls, gameplay and
+save format are retained. Restoration mechanics are planned separately.
+
+[Art sources](assets/README.md) · [Validation and real desktop/mobile screenshots](docs/autumn-vintage.md).
+Earlier milestone screenshots below document their older builds.
 
 ## Playable slice
 
-- Existing procedural shop, shopkeeper, idle/walking poses, walls and furniture collisions.
+- Original pixel-art shop, shopkeeper, directional idle/walking poses, walls and furniture collisions.
 - Physical **WASD** (including alternate keyboard layouts) or **arrow keys** to move.
 - **E** near the front of the green storage chest opens its inventory. A contextual prompt
   appears within 36 pixels of the interaction point; walls/furniture block the interaction ray.
@@ -121,17 +137,26 @@ Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/d
 Previews: [main menu](docs/save-main-menu.png) · [manual save](docs/save-pause-menu.png) ·
 [busy shop explanation](docs/save-unsafe-menu.png) · [new game confirmation](docs/save-new-confirmation.png).
 
+## Web / iPhone
+
+Web branch: `web-iphone-safari`, based on the updated interior in `stage-8-cozy-shop`.
+[How to play and enable GitHub Pages from iPhone](docs/web-iphone.md).
+The target URL is not a promise of publication: check the deployment result in the PR.
+
 ## Run
 
 Open `project.godot` in Godot **4.3** and press F5. No external assets or plugins are needed.
 The base viewport is 640×360 with nearest filtering and integer canvas scaling.
-This is a desktop keyboard/mouse prototype; touch controls and a Windows export are pending.
+The Web export adds an external touch D-pad and E/I/Esc buttons, mobile layout and
+browser saves. See [iPhone play / GitHub Pages setup](docs/web-iphone.md) for the
+phone-only steps, deployment status caveat and browser limitations. Windows export
+remains pending.
 
 ## Code map
 
 | Files | Responsibility |
 | --- | --- |
-| `scripts/player.gd`, `scenes/characters/player.tscn` | Existing CharacterBody2D movement and procedural character |
+| `scripts/player.gd`, `scenes/characters/player.tscn`, `scripts/villager_art.gd` | Existing CharacterBody2D movement and shared directional pixel-art atlas |
 | `scripts/start_menu.gd`, `scenes/start.tscn`, `scripts/save_store.gd` | Application entry, title/confirmation menu and validated single-slot persistence |
 | `scripts/shop.gd`, `scenes/main.tscn` | Existing room and small composition/wiring layer |
 | `scripts/interactable.gd` | Group-based endpoint, prompt, interaction position and actor signal |
@@ -149,7 +174,7 @@ This is a desktop keyboard/mouse prototype; touch controls and a Windows export 
 | `scripts/checkout_menu.gd`, `scenes/ui/checkout_menu.tscn`, `scripts/coin_effect.gd` | First-customer service panel, sale feedback and transient pixel coins |
 | `scripts/inventory_menu.gd`, `scenes/ui/inventory_menu.tscn` | Bag and storage panels, modal input, balance HUD |
 | `scripts/supplier_menu.gd`, `scenes/ui/supplier_menu.tscn` | Supplier catalog, quantities, subtotals and delivery status |
-| `assets/items/` | Original SVG icons composed on a 16×16 pixel grid |
+| `assets/items/`, `assets/shop/`, `assets/characters/`, `tools/build_shop_art.py` | Original native-grid PNG art and reproducible optional authoring script |
 | `tests/run_tests.gd`, `tests/run_customer_tests.gd`, `tests/run_checkout_tests.gd`, `tests/run_day_tests.gd`, `tests/run_save_tests.gd`, `tests/run_checks.sh` | Logic, scene/input integration, complete customer visits and smoke checks |
 
 Inventory capacity counts **total units**, not slots. Each product has one stack limited by
@@ -239,7 +264,18 @@ Headless results do not establish visual quality or Windows compatibility. See
 
 ## Next milestones
 
-1. Original art/audio, broader desktop testing and Windows export.
+1. Audio, broader desktop testing and Windows export.
 
-The current procedural room is preserved; village expansion remains future work.
-All current graphics are original project placeholders; no commercial game assets are used.
+The current room and its mechanics are preserved; village expansion remains future work.
+All graphics are original project art; no commercial game sprites or third-party asset packs are used.
+
+
+## Пастельная ретро-лавка
+
+Ветка `feat/pastel-retro-shop` основана на `web-iphone-safari`.
+Оригинальные чиби-спрайты, светлая деревенская лавка с розовыми обоями,
+сиреневой кассой и мятным сундуком; русские пиксельные меню и контекстная
+кнопка действия на телефоне. Формат сохранений и экономика прежние.
+
+[Скриншоты и результаты проверок](docs/pastel-redesign.md) ·
+[Графика, исходники и лицензия шрифта](assets/README.md).

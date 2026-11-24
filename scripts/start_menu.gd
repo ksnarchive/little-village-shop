@@ -28,7 +28,7 @@ func _build_menu() -> void:
 	root.theme = InventoryMenu.cozy_theme()
 	menu.add_child(root)
 	var shade := ColorRect.new()
-	shade.color = Color("#253528b8")
+	shade.color = Color("#51483F9c")
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(shade)
 	var center := CenterContainer.new()
@@ -41,8 +41,8 @@ func _build_menu() -> void:
 	content.add_theme_constant_override("separation", 10)
 	panel.add_child(content)
 	var title := Label.new()
-	title.text = "Little Village Shop"
-	title.add_theme_font_size_override("font_size", 27)
+	title.text = "Лавка в маленькой деревне"
+	title.add_theme_font_size_override("font_size", 26)
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	content.add_child(title)
 	var subtitle := Label.new()
@@ -61,6 +61,7 @@ func _build_menu() -> void:
 func _button(text: String, action: Callable) -> Button:
 	var button := Button.new()
 	button.text = text
+	InventoryMenu.fit_web_button(button)
 	button.pressed.connect(action)
 	content.add_child(button)
 	return button

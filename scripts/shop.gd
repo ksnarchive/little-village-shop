@@ -1,13 +1,7 @@
 extends Node2D
-## Self-contained prototype room drawn in code until original tiles are ready.
-const WALL := Color("#8c654b")
-const FLOOR := Color("#e7cda4")
-const FLOOR_ALT := Color("#dfc39a")
-const SHELF_DARK := Color("#765238")
-const COUNTER := Color("#9d7455")
-const WINDOW := Color("#a7c4cb")
-const ROOM := Rect2(128, 48, 384, 264)
-const TILE: int = 16
+## Composition/wiring and original vintage room art. Economy and save wiring are unchanged.
+const ROOM_ART: Texture2D = preload("res://assets/shop/room.png")
+const CHECKOUT_ART: Texture2D = preload("res://assets/shop/checkout.png")
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
 var player_inventory: Inventory
 var economy: ShopEconomy
@@ -102,35 +96,8 @@ func _solid(rect: Rect2) -> void:
     add_child(body)
 
 func _draw() -> void:
-    draw_rect(Rect2(Vector2.ZERO, Vector2(640, 360)), Color("#819c70"))
-    draw_rect(ROOM, FLOOR)
-    for x in range(8, 32):
-        for y in range(3, 20):
-            if (x + y) % 2 == 0:
-                draw_rect(Rect2(x * TILE, y * TILE, TILE, TILE), FLOOR_ALT)
-    # Wall border, with a walkable doorway at the bottom.
-    draw_rect(Rect2(128, 48, 384, 16), WALL)
-    draw_rect(Rect2(128, 48, 16, 264), WALL)
-    draw_rect(Rect2(496, 48, 16, 264), WALL)
-    draw_rect(Rect2(128, 296, 176, 16), WALL)
-    draw_rect(Rect2(336, 296, 176, 16), WALL)
-    draw_rect(Rect2(304, 296, 32, 6), Color("#77926b"))
-    for wx in [208, 416]:
-        draw_rect(Rect2(wx, 48, 32, 12), WINDOW)
-        draw_line(Vector2(wx + 16, 48), Vector2(wx + 16, 60), WALL, 2)
-    _fixture(fixtures[0], COUNTER, SHELF_DARK)
-    draw_rect(Rect2(198, 271, 20, 10), SHELF_DARK)
-    draw_rect(Rect2(201, 268, 14, 7), Color("#61734f"))
-    draw_rect(Rect2(203, 269, 10, 3), Color("#d9dfbc"))
-    draw_rect(Rect2(201, 277, 14, 2), Color("#d8bf86"))
-    # Small flowers outside.
-    for p in [Vector2(96, 80), Vector2(544, 110), Vector2(110, 275), Vector2(540, 275)]:
-        draw_circle(p, 5, Color("#f1deb7"))
-        draw_circle(p, 2, Color("#d8a15f"))
-
-func _fixture(rect: Rect2, color: Color, edge: Color) -> void:
-    draw_rect(rect, edge)
-    draw_rect(Rect2(rect.position + Vector2(3, 3), rect.size - Vector2(6, 6)), color)
+    draw_texture(ROOM_ART, Vector2.ZERO)
+    draw_texture(CHECKOUT_ART, Vector2(176, 252))
 
 func _refresh_save_status() -> void:
     inventory_ui.save_notice.text = last_save_message

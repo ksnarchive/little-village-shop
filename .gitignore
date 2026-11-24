@@ -10,3 +10,6 @@
 Thumbs.db
 # Save games belong in user://, not the repository
 /saves/
+
+# Browser validation dependencies
+web/node_modules/
