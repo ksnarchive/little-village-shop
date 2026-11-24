@@ -89,6 +89,7 @@
 bash tests/run_checks.sh
 mkdir -p builds/web
 godot --headless --path . --export-release Web builds/web/index.html
+python3 tools/package_release.py builds/web "$(git rev-parse HEAD)" --ref local
 python3 -m http.server 8060 --directory builds/web
 # В отдельном терминале, только для разработчиков:
 cd web
@@ -101,10 +102,11 @@ npm run test:gameplay
 
 Workflow `.github/workflows/web-pages.yml` запускает все проверки Godot, экспорт,
 браузерную проверку загрузки, управления и сохранений Chromium/WebKit, сохраняет screenshots/logs и артефакт Pages.
-PR только проверяется; push в `web-iphone-safari` публикует проверенную ветку.
-Push в `main` публикует её лишь после явного слияния пользователем.
-`build-info.json` содержит точный SHA и базу интерьера; deployment сравнивает его
-с SHA текущего запуска после публикации. Никакие PR не объединяются workflow.
+PR только проверяется; обновлённый workflow публикует push в `main`.
+`build-info.json` содержит точный SHA, адрес HTML и SHA-256 версионных ресурсов;
+deployment проверяет реальные опубликованные файлы. Загрузчик обходит кеш
+манифеста и выбирает текущую сборку без удаления сохранений.
+Подробнее: [исправление кеширования](web-cache-fix.md). Никакие PR не объединяются workflow.
 
 Оба режима браузерных проверок используют настоящий release export, нажатия и удержания кнопок,
 обычные меню, реальных посетителей и содержимое IndexedDB; игровых debug-хуков нет.

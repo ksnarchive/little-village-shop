@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const {chromium, webkit} = require('playwright');
+const {chromium, webkit, devices} = require('playwright');
 const url = process.env.GAME_URL || 'http://127.0.0.1:8060/';
 const output = process.env.CAPTURE_DIR || '../builds/browser-checks';
 const fullGameplay = process.argv.includes('--gameplay');
@@ -15,7 +15,8 @@ async function check(name) {
   } : (process.env.WEBKIT_PATH ? {executablePath: process.env.WEBKIT_PATH} : {});
   const browser = await ({chromium, webkit}[name]).launch(options);
   try {
-    const context = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true, deviceScaleFactor: 3});
+    // Let Playwright rotate screen with viewport instead of pinning the descriptor's portrait screen.
+  const context = await browser.newContext({...devices['iPhone 13 landscape'], screen: undefined});
     const page = await context.newPage();
     const errors = [];
     page.on('pageerror', error => errors.push(error.message));
@@ -230,7 +231,7 @@ async function check(name) {
       await page.setViewportSize(viewport); await wait(300);
       for (const selector of ['#canvas', ...['ArrowUp', 'ArrowLeft', 'ArrowRight', 'ArrowDown', 'KeyE', 'KeyI', 'Escape'].map(code => `[data-code="${code}"]`)]) {
         const b = await page.locator(selector).boundingBox();
-        assert(b && b.x >= 0 && b.y >= 0 && b.x + b.width <= viewport.width + 1 && b.y + b.height <= viewport.height + 1, `${name}: ${selector} outside ${JSON.stringify(viewport)}`);
+        assert(b && b.x >= 0 && b.y >= 0 && b.x + b.width <= viewport.width + 1 && b.y + b.height <= viewport.height + 1, `${name}: ${selector} ${JSON.stringify(b)} outside ${JSON.stringify(viewport)}`);
       }
       await capture(`${viewport.width}x${viewport.height}`);
     }

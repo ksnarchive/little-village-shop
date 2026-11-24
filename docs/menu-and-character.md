@@ -40,6 +40,7 @@
 GODOT_BIN=/path/to/godot-4.3 bash tests/run_checks.sh
 mkdir -p builds/web
 godot --headless --path . --export-release Web builds/web/index.html
+python3 tools/package_release.py builds/web "$(git rev-parse HEAD)" --ref local
 python3 -m http.server 8060 --directory builds/web
 # В другом терминале:
 cd web

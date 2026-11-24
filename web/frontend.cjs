@@ -2,7 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs/promises');
 const path = require('node:path');
-const {chromium, webkit} = require('playwright');
+const {chromium, webkit, devices} = require('playwright');
 const url = process.env.GAME_URL || 'http://127.0.0.1:8060/';
 const output = process.env.CAPTURE_DIR || '../builds/browser-checks';
 const engines = (process.env.BROWSERS || 'chromium,webkit').split(',');
@@ -12,7 +12,8 @@ async function check(engine) {
     ...(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {}),
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist']
   } : {});
-  const context = await browser.newContext({viewport:{width:1280,height:720}, hasTouch:true, deviceScaleFactor:1});
+  // Let Playwright rotate screen with viewport instead of pinning the descriptor's portrait screen.
+  const context = await browser.newContext({...devices['iPhone 13 landscape'], screen: undefined});
   const page = await context.newPage();
   const errors=[];
   page.on('pageerror', error=>errors.push(error.message));
@@ -47,7 +48,12 @@ async function check(engine) {
     await capture('settings');
     await tap(320,300); // Done.
     await tap(150,177); // New game.
+    assert.equal(await page.locator('#movement').isVisible(),false);
     await capture('wardrobe-default');
+    await tap(320,274); // Back: cancellation must not create a save.
+    assert.equal(await saved(),null);
+    await tap(150,177); // Return to wardrobe.
+
     // Name is focused by the wardrobe. Exercise real Russian text entry.
     await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Лёва');await wait(200);
     await tap(600,138); // Skin, next.
@@ -65,7 +71,9 @@ async function check(engine) {
     const b=await page.locator('#canvas').boundingBox();
     assert(b.x>=0&&b.y>=0&&b.x+b.width<=391&&b.y+b.height<=845);
     await capture('wardrobe-iphone-portrait');
-    await page.mouse.move(b.x+b.width*.8,b.y+b.height*.7);await page.mouse.wheel(0,500);await wait(400);
+    // Mobile WebKit has no wheel input; follow-focus scrolls the real Godot list.
+    for(let i=0;i<15;i++) await page.keyboard.press('Tab');
+    await wait(400);
     await capture('wardrobe-iphone-outfits');
     await tap(210,699); // Confirm.
     const data=await awaitSave();
