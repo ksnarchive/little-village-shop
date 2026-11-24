@@ -39,7 +39,9 @@ async function capture() {
     await page.waitForTimeout(500);
     await page.screenshot({path: path.join(docs, `${prefix}-title.png`)});
     const canvas = await page.locator('#canvas').boundingBox();
-    await page.mouse.click(canvas.x + canvas.width / 2, canvas.y + canvas.height * 260 / 360);
+    await page.mouse.click(canvas.x + canvas.width * 150 / 640, canvas.y + canvas.height * 177 / 360);
+    await page.waitForTimeout(300);
+    await page.mouse.click(canvas.x + canvas.width * 450 / 640, canvas.y + canvas.height * 320 / 360);
     await page.waitForTimeout(500);
     await page.screenshot({path: path.join(docs, `${prefix}-shop.png`)});
     await page.keyboard.press('KeyI');

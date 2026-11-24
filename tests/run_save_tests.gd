@@ -130,7 +130,7 @@ func _invalid_data(store: SaveStore, shop: Node2D) -> void:
 	write_text(TEST_PATH, "{bad json")
 	check(not store.load_game(shop) and store.message.contains("повреждено"), "Corrupt save without backup is explained")
 	check(store.capture(shop) == good, "Corrupt load changes nothing")
-	for version in [0, 2]:
+	for version in [0, 3]:
 		var data := good.duplicate(true)
 		data.version = version
 		write_text(TEST_PATH, JSON.stringify(data))
@@ -250,6 +250,8 @@ func _entry_menu() -> void:
 	entry.refresh()
 	entry.request_new_game()
 	entry.confirm_button.pressed.emit()
+	check(entry.creator != null and FileAccess.get_file_as_string(TEST_PATH) == bytes, "Wardrobe opens without replacing previous progress")
+	entry.creator.confirm_button.pressed.emit()
 	check(entry.shop.day.day_number == 1 and entry.shop.day.minute == 480 and entry.shop.economy.balance == 100, "Confirmed new game starts fresh")
 	check(entry.shop.player_inventory.total_units() == 0 and entry.shop.storage.inventory.total_units() == 13 and entry.shop.customers.is_empty(), "New game has demo goods and no duplicate objects")
 	check(entry.store.read_save(entry.shop).day == 1, "Confirmed new game replaces slot")

@@ -14,6 +14,9 @@ body { -webkit-user-select: none; user-select: none; overscroll-behavior: none; 
 #canvas { display: block; width: 640px; height: 360px; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; outline: none; }
 .rail { display: none; flex: 0 0 82px; align-items: center; justify-content: center; gap: 6px; }
 .touch .rail { display: flex; }
+.frontend .rail { display: none; }
+.touch.frontend #rotate { display: none; }
+@media (orientation: portrait) { .touch.frontend #screen { height: 100%; flex: 1; } }
 #actions { flex-direction: column; }
 #dpad { display: grid; grid-template-columns: repeat(2, 36px); gap: 4px; }
 #dpad [data-code="ArrowUp"], #dpad [data-code="ArrowDown"] { grid-column: 1 / 3; justify-self: center; }
@@ -80,16 +83,27 @@ window.setShopAction = action => {
   button.disabled = !ready || !action;
 };
 controls.forEach(button => { button.disabled = true; });
+let frontend = true;
+document.body.classList.add("frontend");
+window.setFrontend = active => { frontend = active; releaseAll(); document.body.classList.toggle("frontend", active); resize(); };
 function resize() {
   const box = document.getElementById('screen').getBoundingClientRect();
-  const fit = Math.min(box.width / 640, box.height / 360);
+  const portrait = frontend && window.innerHeight > window.innerWidth;
+  const width = portrait ? 400 : 640;
+  const height = portrait ? 740 : 360;
+  // Policy 0 leaves the backing buffer to this shell. Godot detects the change
+  // and rebuilds its viewport; CSS-only resizing would stretch a landscape buffer.
+  if (canvas.width !== width) canvas.width = width;
+  if (canvas.height !== height) canvas.height = height;
+  const fit = Math.min(box.width / width, box.height / height);
   // Integer physical-pixel scaling when space permits. Downscale with nearest on small screens.
   const dpr = window.devicePixelRatio || 1;
   const integerScale = Math.floor(fit * dpr) / dpr;
   const scale = integerScale >= fit * 0.9 ? integerScale : fit;
-  canvas.style.width = `${640 * scale}px`;
-  canvas.style.height = `${360 * scale}px`;
+  canvas.style.width = `${width * scale}px`;
+  canvas.style.height = `${height * scale}px`;
 }
+window.resizeGame = resize;
 new ResizeObserver(resize).observe(document.getElementById('screen'));
 window.addEventListener('orientationchange', releaseAll);
 window.addEventListener('resize', resize);

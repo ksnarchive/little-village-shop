@@ -58,3 +58,17 @@ python3 tools/build_shop_font.py
 
 Реальные скриншоты веб-релиза и протокол проверки:
 [`docs/autumn-vintage.md`](../docs/autumn-vintage.md).
+
+## Village menu and character wardrobe
+
+`frontend/village.png`, `dressing_room.png`, `cloud.png`, `leaves.png` and the
+`characters/{body,clothes,face,eyes,hair}.png` layers are original pixel artwork
+for this project. Rebuild with `python3 tools/build_frontend_art.py` (Pillow).
+No external art packs or generated runtime geometry are used for these scenes.
+
+Character cells are 24×32, ordered down / up / left / right, with idle / step A /
+step B in each direction. Each garment or hairstyle occupies a complete atlas
+row; other layers use one row. White and grey skin, eye and hair ramps are tinted
+by `CharacterArt`. Numeric option IDs in `CharacterAppearance` are save-format
+IDs: append future options rather than reorder them. Clothes are painted in the
+shop's autumn palette and are available to every character.
