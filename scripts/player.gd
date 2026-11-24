@@ -1,7 +1,16 @@
 class_name Shopkeeper
 extends CharacterBody2D
-## Keyboard-controlled shopkeeper with the shared original villager atlas.
+## Keyboard-controlled shopkeeper with persistent, aligned pixel appearance layers.
 const SPEED: float = 95.0
+var appearance := CharacterAppearance.DEFAULT.duplicate()
+
+func set_appearance(value: Dictionary) -> void:
+    if CharacterAppearance.valid(value):
+        appearance = {"name": value.name}
+        for key in CharacterAppearance.LIMITS:
+            appearance[key] = int(value[key])
+        queue_redraw()
+
 var facing: Vector2 = Vector2.DOWN
 var walking: bool = false
 var step_time: float = 0.0
@@ -29,4 +38,4 @@ func _physics_process(delta: float) -> void:
     queue_redraw()
 
 func _draw() -> void:
-    VillagerArt.draw_actor(self, 0, facing, walking, step_time)
+    CharacterArt.draw_actor(self, appearance, facing, walking, step_time)

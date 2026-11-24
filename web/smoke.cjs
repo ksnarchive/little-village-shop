@@ -41,12 +41,12 @@ async function check(name) {
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
       await page.mouse.down(); await wait(ms); await page.mouse.up(); await wait(150);
     };
-    const atlas = await fs.readFile(path.join(__dirname, '../assets/characters/villagers.png'), 'base64');
+    const layers = await Promise.all(['body', 'clothes', 'face', 'eyes', 'hair'].map(async layer => fs.readFile(path.join(__dirname, `../assets/characters/${layer}.png`), 'base64')));
     // Observe rendered pixels: fixed walk durations drift on slower CI machines.
     // This reads the actual sprite, without reading or changing gameplay state.
     let lastPosition = {x: 320, y: 222};
     const playerPosition = async () => {
-      const found = await page.evaluate(async ({atlas, lastPosition}) => {
+      const found = await page.evaluate(async ({layers, lastPosition}) => {
       async function pixels(url) {
         const img = new Image(); img.src = url; await img.decode();
         const surface = document.createElement('canvas');
@@ -54,7 +54,18 @@ async function check(name) {
         const ctx = surface.getContext('2d'); ctx.drawImage(img, 0, 0);
         return ctx.getImageData(0, 0, img.width, img.height);
       }
-      const source = await pixels('data:image/png;base64,' + atlas);
+      const sheets = await Promise.all(layers.map(data => pixels('data:image/png;base64,' + data)));
+      const source = new ImageData(288, 32);
+      const tints = [[245,211,189], [255,255,255], [255,255,255], [116,81,61], [128,96,75]];
+      for (let n = 0; n < sheets.length; n++) {
+        const sheet = sheets[n];
+        // Default hair is row 0, every layer has the same 12 aligned cells.
+        for (let i = 0; i < source.data.length; i += 4) {
+          if (!sheet.data[i + 3]) continue;
+          for (let c = 0; c < 3; c++) source.data[i + c] = Math.round(sheet.data[i + c] * tints[n][c] / 255);
+          source.data[i + 3] = 255;
+        }
+      }
       const frame = await pixels(document.getElementById('canvas').toDataURL());
       // Match the actual nearest-filtered sprite at the compact room's 1.15 zoom.
       // Return world coordinates; gameplay checks still drive ordinary input.
@@ -83,7 +94,7 @@ async function check(name) {
           for (let n = 0; n < samples.length; n++) {
             const [x, y, r, g, b] = samples[n];
             const i = ((top + y) * frame.width + left + x) * 4;
-            if (frame.data[i] === r && frame.data[i + 1] === g && frame.data[i + 2] === b) hits++;
+            if (Math.abs(frame.data[i] - r) <= 1 && Math.abs(frame.data[i + 1] - g) <= 1 && Math.abs(frame.data[i + 2] - b) <= 1) hits++;
             if (hits + samples.length - n - 1 < samples.length * .65) break;
           }
           const score = hits / samples.length;
@@ -95,7 +106,7 @@ async function check(name) {
       }
       if (best) return best;
       throw new Error('Shopkeeper sprite not visible in the rendered world');
-      }, {atlas, lastPosition});
+      }, {layers, lastPosition});
       lastPosition = found;
       return found;
     };
@@ -144,7 +155,8 @@ async function check(name) {
       throw new Error(`Save did not reach expected state: ${JSON.stringify(await saved())}`);
     };
     await page.goto(url);
-    await start(); await tap(320, 260); // New game, fresh isolated browser context.
+    await start(); await tap(150, 177); // New game, fresh isolated browser context.
+    await tap(450, 320); // Confirm default character in the separate wardrobe.
     await awaitSave(data => data.economy.balance === '100');
     await action('KeyI'); await capture('bag'); await action('KeyI');
     if (fullGameplay) {
@@ -205,9 +217,10 @@ async function check(name) {
     assert.equal(data.storage.items.apple, fullGameplay ? 4 : 6);
     assert.equal(data.shelves.LeftShelf.items.apple || 0, 0);
     const minute = data.minute;
-    await page.reload(); await start(); await tap(320, 205); // Continue.
+    await page.reload(); await start(); await tap(150, 202); // Continue.
     await action('Escape'); await tap(320, 192);
     const restored = await awaitSave(next => next.minute > minute);
+    assert.deepEqual(restored.character, data.character);
     assert.deepEqual(restored.economy, data.economy);
     assert.deepEqual(restored.bag, data.bag);
     assert.deepEqual(restored.storage, data.storage);
