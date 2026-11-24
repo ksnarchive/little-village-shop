@@ -2,7 +2,7 @@
   "name": "little-village-shop-web-checks",
   "private": true,
   "scripts": {
-    "test": "node smoke.cjs && node frontend.cjs",
+    "test": "node smoke.cjs && node frontend.cjs && node cache-upgrade.cjs",
     "test:gameplay": "node smoke.cjs --gameplay",
     "capture:frontend": "node frontend.cjs --docs",
     "capture:review": "node capture-review.cjs"

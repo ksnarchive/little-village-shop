@@ -60,16 +60,32 @@ $GODOT_HEAD_INCLUDE
   <button id="start">Играть</button>
 </section>
 <noscript>Включите JavaScript, чтобы играть.</noscript>
-<script src="$GODOT_URL"></script>
 <script>
 'use strict';
 const config = $GODOT_CONFIG;
-const engine = new Engine(config);
+let engine;
 const canvas = document.getElementById('canvas');
 const status = document.getElementById('status');
 const notice = document.getElementById('notice');
 const progress = document.getElementById('progress');
 const start = document.getElementById('start');
+start.disabled = true;
+// The release guard runs before any engine resources are requested. Raw local
+// exports can still run without the packaging step.
+(async () => {
+  if (!await (window.villageReleaseReady || Promise.resolve(true))) return;
+  await new Promise((resolve, reject) => {
+    const script = document.createElement('script');
+    script.src = '$GODOT_URL';
+    script.onload = resolve;
+    script.onerror = () => reject(new Error('Не удалось загрузить движок игры'));
+    document.head.appendChild(script);
+  });
+  engine = new Engine(config);
+  start.disabled = false;
+})().catch(error => {
+  notice.textContent = `Игра не загрузилась. Проверьте соединение и перезагрузите страницу.\n${error.message || error}`;
+});
 const controls = [...document.querySelectorAll('[data-code]')];
 const touch = navigator.maxTouchPoints > 0 || matchMedia('(pointer: coarse)').matches;
 document.body.classList.toggle('touch', touch);
