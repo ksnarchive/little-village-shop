@@ -277,3 +277,14 @@ Headless results do not establish visual quality or Windows compatibility. See
 
 The current room and its mechanics are preserved; village expansion remains future work.
 All graphics are original project art; no commercial game sprites or third-party asset packs are used.
+
+
+## Пастельная ретро-лавка
+
+Ветка `feat/pastel-retro-shop` основана на `web-iphone-safari`.
+Оригинальные чиби-спрайты, светлая деревенская лавка с розовыми обоями,
+сиреневой кассой и мятным сундуком; русские пиксельные меню и контекстная
+кнопка действия на телефоне. Формат сохранений и экономика прежние.
+
+[Скриншоты и результаты проверок](docs/pastel-redesign.md) ·
+[Графика, исходники и лицензия шрифта](assets/README.md).

@@ -8,7 +8,9 @@ size = Vector2(64, 32)
 
 [node name="Storage" type="Node2D"]
 script = ExtResource("1")
-prompt = "E  Open storage"
+prompt = "E  Открыть кладовую"
+sign_icon = "box"
+art_bounds = Rect2(-34, -22, 68, 42)
 interaction_offset = Vector2(0, 24)
 catalog = ExtResource("2")
 capacity = 60

@@ -25,7 +25,7 @@ func open_shelf(shelf: ShopShelf) -> void:
 	for row in _rows.values():
 		row["amount"] = 1
 	message.remove_theme_color_override("font_color")
-	message.text = "Choose a quantity, then stock the shelf or take goods back."
+	message.text = "Выберите количество и перенесите товары."
 	_refresh()
 
 func release_shelf() -> void:
@@ -66,7 +66,7 @@ func _add_row(item: ItemData) -> void:
 	stepper.name = "Quantity"
 	stepper.add_theme_constant_override("separation", 3)
 	row.add_child(stepper)
-	var less := _button("Less", "−", "Select one fewer %s" % item.display_name)
+	var less := _button("Less", "−", "Уменьшить количество: %s" % item.display_name)
 	less.pressed.connect(_adjust.bind(item.id, -1))
 	stepper.add_child(less)
 	var quantity := Label.new()
@@ -74,15 +74,15 @@ func _add_row(item: ItemData) -> void:
 	quantity.custom_minimum_size.x = 24
 	quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stepper.add_child(quantity)
-	var more := _button("More", "+", "Select one more %s" % item.display_name)
+	var more := _button("More", "+", "Увеличить количество: %s" % item.display_name)
 	more.pressed.connect(_adjust.bind(item.id, 1))
 	stepper.add_child(more)
-	var deposit := _button("Deposit", "Stock", "Move %s from bag to shelf" % item.display_name)
+	var deposit := _button("Deposit", "Выложить", "Выложить на полку: %s" % item.display_name)
 	deposit.theme_type_variation = &"OrderButton"
 	deposit.custom_minimum_size.x = 60
 	deposit.pressed.connect(_transfer.bind(item.id, false))
 	row.add_child(deposit)
-	var take := _button("Take", "Take", "Return %s from shelf to bag" % item.display_name)
+	var take := _button("Take", "Забрать", "Забрать с полки: %s" % item.display_name)
 	take.custom_minimum_size.x = 60
 	take.pressed.connect(_transfer.bind(item.id, true))
 	row.add_child(take)
@@ -125,18 +125,18 @@ func _transfer(item_id: StringName, from_shelf: bool) -> void:
 	# Revalidate at the model boundary even if the button was previously enabled.
 	if source.transfer_to(destination, item_id, amount):
 		message.add_theme_color_override("font_color", Color("#45603c"))
-		message.text = "Returned to bag: %d units." % amount if from_shelf else "Placed on shelf: %d units." % amount
+		message.text = "В рюкзаке: %d шт." % amount if from_shelf else "На полке: %d шт." % amount
 	else:
 		message.add_theme_color_override("font_color", Color("#8a3e2d"))
-		message.text = "Not enough goods or room for this quantity."
+		message.text = "Не хватает товара или места."
 
 func _refresh() -> void:
 	if not is_instance_valid(_shelf):
 		return
 	var stock := _shelf.inventory
 	title.text = _shelf.display_name
-	var state: String = ["Empty", "Partly stocked", "Full"][_shelf.fill_state()]
-	capacity_label.text = "%s  ·  Shelf %d / %d  ·  Bag %d / %d" % [
+	var state: String = ["Пусто", "Есть товары", "Заполнено"][_shelf.fill_state()]
+	capacity_label.text = "%s  ·  Полка %d / %d  ·  Рюкзак %d / %d" % [
 		state, stock.total_units(), stock.capacity, _bag.total_units(), _bag.capacity]
 	fill_meter.max_value = maxi(1, stock.capacity)
 	fill_meter.value = stock.total_units()
@@ -146,7 +146,7 @@ func _refresh() -> void:
 		while row["amount"] > 1 and not _can_select(item_id, row["amount"]):
 			row["amount"] -= 1
 		var amount: int = row["amount"]
-		row["stock"].text = "Bag %d  ·  Shelf %d" % [_bag.quantity(item_id), stock.quantity(item_id)]
+		row["stock"].text = "С собой %d  ·  На полке %d" % [_bag.quantity(item_id), stock.quantity(item_id)]
 		row["quantity"].text = str(amount)
 		row["less"].disabled = amount <= 1
 		row["more"].disabled = not _can_select(item_id, amount + 1)

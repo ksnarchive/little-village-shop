@@ -1,6 +1,12 @@
 {
   "name": "little-village-shop-web-checks",
   "private": true,
-  "scripts": {"test": "node smoke.cjs", "test:gameplay": "node smoke.cjs --gameplay"},
-  "devDependencies": {"playwright": "1.62.1"}
+  "scripts": {
+    "test": "node smoke.cjs",
+    "test:gameplay": "node smoke.cjs --gameplay",
+    "capture:review": "node capture-review.cjs"
+  },
+  "devDependencies": {
+    "playwright": "1.62.1"
+  }
 }

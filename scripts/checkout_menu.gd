@@ -26,7 +26,7 @@ func configure(flow: CustomerFlow, economy: ShopEconomy) -> void:
 	_economy.sales_changed.connect(_on_sales_changed)
 
 func open_checkout() -> void:
-	message.text = "A warm welcome, one sale at a time."
+	message.text = "Каждому гостю — тёплый приём."
 	_refresh()
 
 func _on_queue_changed(_waiting: int) -> void:
@@ -43,12 +43,12 @@ func _refresh() -> void:
 		return
 	_customer = _flow.first_customer()
 	var item := _flow.basket_item(_customer)
-	customer_label.text = "Next villager · %d waiting" % _flow.waiting.size() if _customer != null else "A quiet moment"
+	customer_label.text = "Следующий гость · В очереди %d" % _flow.waiting.size() if _customer != null else "Пока тихо"
 	icon.texture = item.icon if item != null else null
-	product_label.text = "%s × 1   ·   %d coins" % [item.display_name, item.selling_price] if item != null else "No customer at the checkout yet."
-	balance_label.text = "Balance: %d coins" % _economy.balance
-	totals_label.text = "Revenue: %d coins   ·   Sales: %d" % [_economy.revenue, _economy.completed_sales]
-	status.text = "Villagers are moving up…" if _flow.checkout_busy() else "A villager is finishing their visit…" if is_instance_valid(_flow.active_customer) else "Ready to serve" if item != null else "Stock the shelves to welcome more visitors."
+	product_label.text = "%s × 1   ·   %d монет" % [item.display_name, item.selling_price] if item != null else "У кассы пока никого нет."
+	balance_label.text = "Баланс: %d монет" % _economy.balance
+	totals_label.text = "Выручка: %d монет   ·   Продаж: %d" % [_economy.revenue, _economy.completed_sales]
+	status.text = "Гости подходят к кассе…" if _flow.checkout_busy() else "Гость заканчивает покупки…" if is_instance_valid(_flow.active_customer) else "Можно обслужить" if item != null else "Выложите товары для новых гостей."
 	serve_button.disabled = not _flow.can_serve(_customer)
 
 func _serve() -> void:
@@ -56,8 +56,8 @@ func _serve() -> void:
 		return
 	var item := _flow.basket_item(_customer)
 	if _flow.serve_customer(_customer):
-		message.text = "Sold %s!  +%d coins · Thank you!" % [item.display_name, item.selling_price]
+		message.text = "Продано: %s!  +%d монет · Спасибо!" % [item.display_name, item.selling_price]
 		message.add_theme_color_override("font_color", Color("#45603c"))
 	else:
-		message.text = "Please wait for the next villager to reach the counter."
+		message.text = "Подождите, пока гость подойдёт к кассе."
 	_refresh()

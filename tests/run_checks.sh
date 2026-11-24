@@ -4,6 +4,9 @@ set -euo pipefail
 # Godot can log script/import errors while returning zero; fail on those too.
 GODOT_BIN="${GODOT_BIN:-godot}"
 cd "$(dirname "$0")/.."
+# Export output is not game source; skip generated browser icons on subsequent imports.
+mkdir -p builds
+touch builds/.gdignore
 check_log="$(mktemp)"
 trap 'rm -f "$check_log"' EXIT
 
@@ -20,4 +23,5 @@ run_checked --headless --path . --fixed-fps 60 --script res://tests/run_customer
 run_checked --headless --path . --fixed-fps 60 --script res://tests/run_checkout_tests.gd
 run_checked --headless --path . --fixed-fps 60 --script res://tests/run_day_tests.gd
 run_checked --headless --path . --fixed-fps 60 --script res://tests/run_save_tests.gd
+run_checked --headless --path . --script res://tests/run_visual_tests.gd
 run_checked --headless --path . --quit-after 60

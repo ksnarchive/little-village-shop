@@ -235,7 +235,7 @@ func _test_shop() -> void:
 	await _frames(3)
 	controller.refresh_target()
 	_check(controller.target == storage, "Storage reachable from front")
-	_check(menu.prompt_label.text == "E  Open storage", "Context prompt updates")
+	_check(menu.prompt_label.text == "E  Открыть кладовую", "Context prompt updates")
 	await _key(KEY_E)
 	_check(menu.view == InventoryMenu.View.STORAGE and menu.panel.visible, "Physical E opens storage")
 	_check(not player.controls_enabled and not controller.enabled, "Menu blocks world input")
@@ -251,7 +251,7 @@ func _test_shop() -> void:
 	take.pressed.emit()
 	_check(shop.player_inventory.quantity(&"apple") == 1 and storage.inventory.quantity(&"apple") == 5, "Storage button transfers real stock")
 	var quantities: Label = apple_row.get_child(2)
-	_check(quantities.text == "Bag 1 | Stock 5" and not deposit.disabled, "Inventory signals refresh labels and buttons")
+	_check(quantities.text == "С собой 1 | Склад 5" and not deposit.disabled, "Inventory signals refresh labels and buttons")
 	deposit.pressed.emit()
 	_check(shop.player_inventory.quantity(&"apple") == 0 and storage.inventory.quantity(&"apple") == 6, "Return goods without duplication")
 	await _key(KEY_ESCAPE)
@@ -277,7 +277,7 @@ func _test_supplier() -> void:
 	var storage: ShopStorage = shop.get_node("Storage")
 	var menu: InventoryMenu = shop.get_node("InventoryUI")
 	var supplier := menu.supplier_menu
-	_check(menu.balance_label.text == "100 coins" and menu.balance_card.is_visible_in_tree(),
+	_check(menu.balance_label.text == "100 монет" and menu.balance_card.is_visible_in_tree(),
 		"HUD shows starting balance before ordering")
 	player.position = Vector2(380, 224)
 	Input.action_press("ui_right")
@@ -292,19 +292,19 @@ func _test_supplier() -> void:
 	_check(menu.view == InventoryMenu.View.CLOSED, "E cannot open an obstructed order desk")
 	player.position = Vector2(424, 263)
 	await _frames(3)
-	_check(controller.target == order_desk and menu.prompt_label.text == "E  Order from supplier",
+	_check(controller.target == order_desk and menu.prompt_label.text == "E  Заказать товары",
 		"Front approach shows order prompt")
 	await _key(KEY_E)
 	_check(menu.view == InventoryMenu.View.SUPPLIER and supplier.is_visible_in_tree(),
 		"Physical E opens supplier menu")
 	_check(not player.controls_enabled and not controller.enabled and not menu.inventory_content.visible,
 		"Supplier menu blocks world input and shares the modal UI")
-	_check(supplier.balance_label.text == "100 coins" and supplier.storage_label.text == "Storage  13 / 60 units",
+	_check(supplier.balance_label.text == "100 монет" and supplier.storage_label.text == "Склад  13 / 60",
 		"Supplier menu displays balance and shared storage capacity")
 	_check(supplier.rows_container.get_child_count() == 3, "Supplier lists all three catalog items")
 	for item in CATALOG.items:
 		var stock: Label = supplier.rows_container.get_node(String(item.id) + "/Row/Details/Stock")
-		_check(stock.text.begins_with("%d / unit" % item.purchase_price), "Supplier displays catalog unit price")
+		_check(stock.text.begins_with("%d за шт." % item.purchase_price), "Supplier displays catalog unit price")
 
 	var apple_row := supplier.rows_container.get_node("apple/Row")
 	var apple_less: Button = apple_row.get_node("Quantity/Less")
@@ -316,29 +316,29 @@ func _test_supplier() -> void:
 	apple_more.pressed.emit()
 	apple_more.pressed.emit()
 	apple_less.pressed.emit()
-	_check(apple_amount.text == "2" and apple_total.text == "6 coins", "Quantity controls update the subtotal")
+	_check(apple_amount.text == "2" and apple_total.text == "6 монет", "Quantity controls update the subtotal")
 	apple_buy.pressed.emit()
 	_check(shop.economy.balance == 94 and storage.inventory.quantity(&"apple") == 8
 		and shop.player_inventory.total_units() == 0, "Order delivers to storage and charges exactly six coins")
-	_check(supplier.balance_label.text == "94 coins" and supplier.storage_label.text == "Storage  15 / 60 units"
-		and supplier.message.text == "Delivered to storage: Apple × 2.", "Purchase refreshes the open menu")
+	_check(supplier.balance_label.text == "94 монет" and supplier.storage_label.text == "Склад  15 / 60"
+		and supplier.message.text == "В кладовую: Яблоко × 2.", "Purchase refreshes the open menu")
 
 	var milk_more: Button = supplier.rows_container.get_node("milk/Row/Quantity/More")
 	var milk_buy: Button = supplier.rows_container.get_node("milk/Row/Buy")
 	for index in range(13):
 		milk_more.pressed.emit()
 	milk_buy.pressed.emit()
-	_check(supplier.message.text.contains("enough coins") and shop.economy.balance == 94
+	_check(supplier.message.text.contains("не хватает монет") and shop.economy.balance == 94
 		and storage.inventory.quantity(&"milk") == 3, "Failed order reports low funds without any changes")
 	storage.inventory.add(&"apple", 45)
 	var bread_buy: Button = supplier.rows_container.get_node("bread/Row/Buy")
 	bread_buy.pressed.emit()
-	_check(supplier.message.text.contains("enough room") and shop.economy.balance == 94
+	_check(supplier.message.text.contains("не хватает места") and shop.economy.balance == 94
 		and storage.inventory.quantity(&"bread") == 4, "Failed order reports a full stockroom without any changes")
 	await _key(KEY_ESCAPE)
 	_check(menu.view == InventoryMenu.View.CLOSED and player.controls_enabled and controller.enabled,
 		"Esc closes supplier menu and restores movement and interaction")
-	_check(menu.balance_label.text == "94 coins" and menu.balance_card.is_visible_in_tree(),
+	_check(menu.balance_label.text == "94 монет" and menu.balance_card.is_visible_in_tree(),
 		"World HUD shows updated balance after closing the menu")
 	await _key(KEY_E)
 	_check(apple_amount.text == "1", "Reopening supplier starts a fresh selection")
@@ -443,13 +443,13 @@ func _test_shelves() -> void:
 	_check(controller.target == null, "Side approach does not offer shelf interaction")
 	player.position = Vector2(208, 180)
 	await _frames(3)
-	_check(controller.target == left and menu.prompt_label.text == "E  Arrange shelf",
+	_check(controller.target == left and menu.prompt_label.text == "E  Выложить товары",
 		"Front of shelf shows the interaction prompt")
 	await _key(KEY_E)
 	_check(menu.view == InventoryMenu.View.SHELF and shelf_menu.is_visible_in_tree()
 		and not menu.inventory_content.visible and not menu.supplier_menu.visible,
 		"Physical E opens only the selected shelf menu")
-	_check(shelf_menu.title.text == "Orchard shelf" and shelf_menu.capacity_label.text.begins_with("Empty"),
+	_check(shelf_menu.title.text == "Яблочная полка" and shelf_menu.capacity_label.text.begins_with("Пусто"),
 		"Menu names the selected shelf and shows its empty state")
 	_check(not player.controls_enabled and not controller.enabled and menu.prompt_label.text.is_empty(),
 		"Shelf menu blocks movement, interactions and world prompt")
@@ -472,7 +472,7 @@ func _test_shelves() -> void:
 		"Empty bag and shelf disable unavailable operations")
 	# Simulate an external stock change while the menu is open.
 	shop.storage.inventory.transfer_to(bag, &"apple", 6)
-	_check(stock_label.text == "Bag 6  ·  Shelf 0" and not deposit.disabled and not more.disabled,
+	_check(stock_label.text == "С собой 6  ·  На полке 0" and not deposit.disabled and not more.disabled,
 		"Shelf UI observes the real bag rather than caching stock")
 	more.pressed.emit()
 	more.pressed.emit()
@@ -482,7 +482,7 @@ func _test_shelves() -> void:
 	_check(bag.quantity(&"apple") == 4 and left.inventory.quantity(&"apple") == 2
 		and right.inventory.total_units() == 0, "Stock button deposits selected quantity on only this shelf")
 	_check(left.fill_state() == ShopShelf.FillState.PARTIAL and shelf_menu.fill_meter.value == 2
-		and shelf_menu.capacity_label.text.contains("Shelf 2 / 12") and stock_label.text == "Bag 4  ·  Shelf 2",
+		and shelf_menu.capacity_label.text.contains("Полка 2 / 12") and stock_label.text == "С собой 4  ·  На полке 2",
 		"Signals update fill meter, state, counts and capacities")
 	take.pressed.emit()
 	_check(bag.quantity(&"apple") == 6 and left.inventory.total_units() == 0,
@@ -505,13 +505,13 @@ func _test_shelves() -> void:
 		"Quantity respects remaining shelf space shared across products")
 	milk_row.get_node("Deposit").pressed.emit()
 	_check(left.inventory.total_units() == 12 and left.fill_state() == ShopShelf.FillState.FULL
-		and shelf_menu.capacity_label.text.begins_with("Full") and shelf_menu.fill_meter.value == 12,
+		and shelf_menu.capacity_label.text.begins_with("Заполнено") and shelf_menu.fill_meter.value == 12,
 		"Mixed products fill the shelf and update full state")
 	_check(milk_row.get_node("Deposit").disabled and bag.quantity(&"milk") == 1,
 		"Full shelf disables depositing even with goods left in bag")
 	milk_row.get_node("Deposit").pressed.emit()
 	_check(left.inventory.total_units() == 12 and bag.quantity(&"milk") == 1
-		and shelf_menu.message.text.contains("Not enough"), "Stale or forced deposit revalidates atomically")
+		and shelf_menu.message.text.contains("Не хватает"), "Stale or forced deposit revalidates atomically")
 	bag.add(&"bread", 23)
 	_check(take.disabled, "Full bag disables taking goods off shelf")
 	var before := left.inventory.serialize()
@@ -538,7 +538,7 @@ func _test_shelves() -> void:
 	player.position = Vector2(432, 180)
 	await _frames(3)
 	await _key(KEY_E)
-	_check(shelf_menu.title.text == "Pantry shelf" and stock_label.text == "Bag 6  ·  Shelf 0"
+	_check(shelf_menu.title.text == "Сиреневая полка" and stock_label.text == "С собой 6  ·  На полке 0"
 		and amount.text == "1", "Second shelf opens its own stock with reset quantities")
 	_check(not left.inventory.changed.is_connected(shelf_menu._refresh)
 		and right.inventory.changed.is_connected(shelf_menu._refresh), "Switching shelves releases previous stock subscription")
