@@ -37,7 +37,7 @@ display_name = "Яблочная полка"
 [node name="RightShelf" parent="." instance=ExtResource("6")]
 position = Vector2(432, 120)
 palette = "pantry"
-display_name = "Сиреневая полка"
+display_name = "Голубая полка"
 
 [node name="Customers" type="Node2D" parent="."]
 script = ExtResource("7")

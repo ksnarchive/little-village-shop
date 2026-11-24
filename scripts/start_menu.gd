@@ -28,7 +28,7 @@ func _build_menu() -> void:
 	root.theme = InventoryMenu.cozy_theme()
 	menu.add_child(root)
 	var shade := ColorRect.new()
-	shade.color = Color("#6855699c")
+	shade.color = Color("#51483F9c")
 	shade.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	root.add_child(shade)
 	var center := CenterContainer.new()

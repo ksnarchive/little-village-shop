@@ -538,7 +538,7 @@ func _test_shelves() -> void:
 	player.position = Vector2(432, 180)
 	await _frames(3)
 	await _key(KEY_E)
-	_check(shelf_menu.title.text == "Сиреневая полка" and stock_label.text == "С собой 6  ·  На полке 0"
+	_check(shelf_menu.title.text == "Голубая полка" and stock_label.text == "С собой 6  ·  На полке 0"
 		and amount.text == "1", "Second shelf opens its own stock with reset quantities")
 	_check(not left.inventory.changed.is_connected(shelf_menu._refresh)
 		and right.inventory.changed.is_connected(shelf_menu._refresh), "Switching shelves releases previous stock subscription")

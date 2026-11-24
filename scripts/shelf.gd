@@ -43,7 +43,7 @@ func _draw() -> void:
 				break
 			unit_index -= count
 	# A small stock meter stays legible when looking at the shop from afar.
-	draw_rect(Rect2(-25, 20, 50, 2), Color("#685569"))
+	draw_rect(Rect2(-25, 20, 50, 2), Color("#51483F"))
 	if total > 0:
 		var width := maxi(1, floori(50.0 * total / inventory.capacity))
-		draw_rect(Rect2(-25, 20, width, 2), Color("#B5D6CE"))
+		draw_rect(Rect2(-25, 20, width, 2), Color("#BCC5AC"))

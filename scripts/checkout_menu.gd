@@ -57,7 +57,7 @@ func _serve() -> void:
 	var item := _flow.basket_item(_customer)
 	if _flow.serve_customer(_customer):
 		message.text = "Продано: %s!  +%d монет · Спасибо!" % [item.display_name, item.selling_price]
-		message.add_theme_color_override("font_color", Color("#45603c"))
+		message.add_theme_color_override("font_color", Color("#546346"))
 	else:
 		message.text = "Подождите, пока гость подойдёт к кассе."
 	_refresh()
