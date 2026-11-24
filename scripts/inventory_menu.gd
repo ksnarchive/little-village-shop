@@ -24,6 +24,7 @@ var _bag: Inventory
 var _storage: Inventory
 var _rows: Dictionary = {}
 var _prompt_text: String = ""
+var _touch_mode := false
 
 @onready var panel: PanelContainer = %Panel
 @onready var inventory_content: VBoxContainer = %InventoryContent
@@ -45,8 +46,9 @@ var _prompt_text: String = ""
 
 func _ready() -> void:
 	_apply_theme()
-	if OS.has_feature("web"):
-		controls_hint.text = "E · взаимодействие   I · рюкзак   Esc · сохранить / меню"
+	_style_hud()
+	_touch_mode = OS.has_feature("web") and bool(JavaScriptBridge.eval("document.body.classList.contains('touch')"))
+	controls_hint.text = "Удерживайте стрелки, чтобы идти" if _touch_mode else "WASD / стрелки — идти     I — рюкзак     Esc — меню"
 	close_button.pressed.connect(close_menu)
 	_build_pause_menu()
 	for button in [close_button, save_button, next_day_button, checkout_menu.serve_button]:
@@ -73,12 +75,12 @@ func configure(catalog: ItemCatalog, bag: Inventory, storage: Inventory) -> void
 		quantities.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(quantities)
 		var take := Button.new()
-		take.text = "Take 1"
+		take.text = "Взять 1"
 		take.pressed.connect(_transfer.bind(item.id, true))
 		fit_web_button(take)
 		row.add_child(take)
 		var deposit := Button.new()
-		deposit.text = "Store 1"
+		deposit.text = "Убрать 1"
 		deposit.pressed.connect(_transfer.bind(item.id, false))
 		fit_web_button(deposit)
 		row.add_child(deposit)
@@ -98,7 +100,7 @@ func configure_day(day: ShopDay) -> void:
 
 func _update_clock() -> void:
 	clock_label.text = "День %d · %s" % [_day.day_number, _day.time_text()]
-	phase_label.text = _day.phase_text()
+	phase_label.text = ["Открытие в 09:00", "Лавка открыта", "Обеденный час", "Тихий вечер", "Закрываемся", "День завершён"][_day.phase]
 
 func show_day_report(report: Dictionary) -> void:
 	# Close any service panel before locking the modal to the finished report.
@@ -147,7 +149,7 @@ func open_checkout() -> void:
 	_open(View.CHECKOUT)
 
 func _update_sales(revenue: int, sales: int) -> void:
-	sales_label.text = "Revenue: %d coins · Sales: %d" % [revenue, sales]
+	sales_label.text = "Выручка %d · Продаж %d" % [revenue, sales]
 
 func _sale_feedback(_item: ItemData, _customer: ShopCustomer) -> void:
 	var effect: Control = Control.new()
@@ -199,7 +201,7 @@ func _open(next_view: View) -> void:
 	save_notice.hide()
 	panel.show()
 	if inventory_content.visible:
-		message.text = "Move one item at a time." if view == View.STORAGE else "Visit storage to collect or return goods."
+		message.text = "Переносите товары по одному." if view == View.STORAGE else "Товары можно взять в кладовой."
 		_refresh()
 	close_button.grab_focus()
 	menu_visibility_changed.emit(true)
@@ -227,13 +229,17 @@ func close_menu() -> void:
 
 func set_prompt(text: String) -> void:
 	_prompt_text = text
-	prompt_label.text = text if view == View.CLOSED else ""
+	prompt_label.text = (text.trim_prefix("E  ") if _touch_mode else text) if view == View.CLOSED else ""
+	prompt_label.visible = not prompt_label.text.is_empty()
+	if OS.has_feature("web"):
+		var action := text.trim_prefix("E  ") if view == View.CLOSED else ""
+		JavaScriptBridge.eval("window.setShopAction && window.setShopAction(%s)" % JSON.stringify(action))
 
 func set_checkout_waiting(waiting: int) -> void:
-	checkout_label.text = "Checkout: %d / 3 waiting" % waiting
+	checkout_label.text = "В очереди: %d / 3" % waiting
 
 func _update_balance(coins: int) -> void:
-	balance_label.text = "%d coins" % coins
+	balance_label.text = "%d монет" % coins
 	supplier_menu.balance_label.text = balance_label.text
 
 func _unhandled_input(event: InputEvent) -> void:
@@ -258,17 +264,17 @@ func _transfer(item_id: StringName, from_storage: bool) -> void:
 	var source := _storage if from_storage else _bag
 	var destination := _bag if from_storage else _storage
 	if source.transfer_to(destination, item_id, 1):
-		message.text = "Moved to bag." if from_storage else "Returned to storage."
+		message.text = "Товар в рюкзаке." if from_storage else "Товар в кладовой."
 	else:
-		message.text = "No stock or destination is full."
+		message.text = "Нет товара или свободного места."
 
 func _refresh() -> void:
 	if _bag == null:
 		return
-	title.text = "Village stockroom" if view == View.STORAGE else "Your bag"
-	capacity_label.text = "Bag: %d / %d units" % [_bag.total_units(), _bag.capacity]
+	title.text = "Кладовая" if view == View.STORAGE else "Рюкзак"
+	capacity_label.text = "Рюкзак: %d / %d" % [_bag.total_units(), _bag.capacity]
 	if view == View.STORAGE:
-		capacity_label.text += "     Storage: %d / %d" % [_storage.total_units(), _storage.capacity]
+		capacity_label.text += "     Склад: %d / %d" % [_storage.total_units(), _storage.capacity]
 	for item_id in _rows:
 		var row: Dictionary = _rows[item_id]
 		var quantities: Label = row["quantities"]
@@ -276,7 +282,7 @@ func _refresh() -> void:
 		var deposit: Button = row["deposit"]
 		quantities.text = "x %d" % _bag.quantity(item_id)
 		if view == View.STORAGE:
-			quantities.text = "Bag %d | Stock %d" % [_bag.quantity(item_id), _storage.quantity(item_id)]
+			quantities.text = "С собой %d | Склад %d" % [_bag.quantity(item_id), _storage.quantity(item_id)]
 		take.visible = view == View.STORAGE
 		deposit.visible = view == View.STORAGE
 		take.disabled = not (_storage.can_remove(item_id, 1) and _bag.can_add(item_id, 1))
@@ -287,44 +293,76 @@ static func fit_web_button(button: Button) -> void:
 	if OS.has_feature("web"):
 		button.custom_minimum_size = button.custom_minimum_size.max(Vector2(44, 44))
 
+func _style_hud() -> void:
+	for label in [controls_hint, checkout_label, sales_label, prompt_label]:
+		label.remove_theme_color_override("font_color")
+		label.remove_theme_color_override("font_shadow_color")
+		label.add_theme_font_size_override("font_size", 14)
+	controls_hint.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#A8B4B1"), 4))
+	prompt_label.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#B7795F"), 5))
+	for label in [checkout_label, sales_label]:
+		label.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#B7795F"), 3))
+	prompt_label.hide()
+
 func _apply_theme() -> void:
 	$Root.theme = cozy_theme()
 
 static func cozy_theme() -> Theme:
 	var cozy := Theme.new()
-	cozy.default_font_size = 14
-	cozy.set_color("font_color", "Label", Color("#513a31"))
-	var frame := _style(Color("#f1deb7"), Color("#765238"), 12)
+	cozy.default_font_size = 16
+	var pixel_font := preload("res://assets/fonts/VillagePixel-Regular.ttf")
+	cozy.default_font = pixel_font
+	cozy.set_color("font_color", "Label", Color("#51483F"))
+	# Bound ledger paper: margins keep text clear of the binding.
+	var frame := StyleBoxTexture.new()
+	frame.texture = preload("res://assets/ui/panel.png")
+	frame.texture_margin_left = 8
+	frame.texture_margin_right = 8
+	frame.texture_margin_top = 8
+	frame.texture_margin_bottom = 8
+	frame.content_margin_left = 18
+	frame.content_margin_right = 14
+	frame.content_margin_top = 12
+	frame.content_margin_bottom = 12
 	cozy.set_stylebox("panel", "PanelContainer", frame)
-	cozy.set_stylebox("normal", "Button", _style(Color("#82936b"), Color("#61734f"), 6))
-	cozy.set_stylebox("hover", "Button", _style(Color("#9daf84"), Color("#61734f"), 6))
-	cozy.set_stylebox("pressed", "Button", _style(Color("#a8664e"), Color("#765238"), 6))
-	cozy.set_stylebox("disabled", "Button", _style(Color("#d6c6a9"), Color("#b8a88c"), 6))
-	var focus := _style(Color(0, 0, 0, 0), Color("#a8664e"), 6)
+	cozy.set_stylebox("normal", "Button", _style(Color("#BCC5AC"), Color("#879575"), 6))
+	cozy.set_stylebox("hover", "Button", _style(Color("#CDD3BE"), Color("#879575"), 6))
+	cozy.set_stylebox("pressed", "Button", _style(Color("#A8B4B1"), Color("#80604B"), 6))
+	cozy.set_stylebox("disabled", "Button", _style(Color("#D8D2C3"), Color("#BAB5A7"), 6))
+	var focus := _style(Color(0, 0, 0, 0), Color("#80604B"), 6)
+	focus.shadow_size = 0
+	focus.shadow_color = Color(0, 0, 0, 0)
 	cozy.set_stylebox("focus", "Button", focus)
-	cozy.set_color("font_color", "Button", Color("#fff2d7"))
-	cozy.set_color("font_hover_color", "Button", Color("#513a31"))
-	cozy.set_color("font_disabled_color", "Button", Color("#847764"))
+	cozy.set_color("font_color", "Button", Color("#51483F"))
+	cozy.set_color("font_hover_color", "Button", Color("#51483F"))
+	cozy.set_color("font_pressed_color", "Button", Color("#51483F"))
+	cozy.set_color("font_focus_color", "Button", Color("#51483F"))
+	cozy.set_color("font_disabled_color", "Button", Color("#918B7D"))
 	for variation in [&"BalanceCard", &"ClockCard", &"OrderHeader", &"OrderRow"]:
 		cozy.set_type_variation(variation, &"PanelContainer")
-	cozy.set_stylebox("panel", &"ClockCard", _style(Color("#f5e4bd"), Color("#765238"), 0))
-	cozy.set_stylebox("panel", &"BalanceCard", _style(Color("#f5e4bd"), Color("#765238"), 5))
-	cozy.set_stylebox("panel", &"OrderHeader", _style(Color("#d9dfbc"), Color("#9aa779"), 8))
-	cozy.set_stylebox("panel", &"OrderRow", _style(Color("#fff0cf"), Color("#dcc39a"), 6))
+	cozy.set_stylebox("panel", &"ClockCard", _style(Color("#E9DFC8"), Color("#80604B"), 0))
+	cozy.set_stylebox("panel", &"BalanceCard", _style(Color("#E9DFC8"), Color("#80604B"), 5))
+	cozy.set_stylebox("panel", &"OrderHeader", _style(Color("#D8DDCF"), Color("#A8B4B1"), 8))
+	cozy.set_stylebox("panel", &"OrderRow", _style(Color("#F0E7D4"), Color("#C5B494"), 6))
 	cozy.set_type_variation(&"QuantityButton", &"Button")
-	cozy.set_stylebox("normal", &"QuantityButton", _style(Color("#d9dfbc"), Color("#9aa779"), 4))
-	cozy.set_color("font_color", &"QuantityButton", Color("#3d4933"))
+	cozy.set_stylebox("normal", &"QuantityButton", _style(Color("#D8DDCF"), Color("#A8B4B1"), 4))
+	cozy.set_color("font_color", &"QuantityButton", Color("#51483F"))
 	cozy.set_type_variation(&"OrderButton", &"Button")
-	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#5e704c"), Color("#4a5e3f"), 4))
-	cozy.set_stylebox("background", "ProgressBar", _style(Color("#c6b18a"), Color("#9d7455"), 0))
-	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#82936b"), Color("#61734f"), 0))
+	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#BCC5AC"), Color("#879575"), 4))
+	cozy.set_stylebox("background", "ProgressBar", _style(Color("#D3C8AE"), Color("#A5977D"), 0))
+	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#BCC5AC"), Color("#879575"), 0))
 	return cozy
 
 static func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
 	style.border_color = border
-	style.set_border_width_all(2)
+	style.set_border_width_all(1)
+	style.corner_radius_top_left = 1
+	style.corner_radius_top_right = 1
+	style.corner_radius_bottom_left = 1
+	style.corner_radius_bottom_right = 1
+	style.corner_detail = 1
 	style.anti_aliasing = false
 	style.shadow_color = Color("#493e3038")
 	style.shadow_size = 2
@@ -357,12 +395,12 @@ func _build_pause_menu() -> void:
 	report_save_status.custom_minimum_size.x = 420
 	report_save_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	save_notice = Label.new()
-	save_notice.position = Vector2(12, 302)
-	save_notice.size.x = 250
+	save_notice.position = Vector2(12, 295)
+	save_notice.size.x = 230
 	save_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	save_notice.add_theme_font_size_override("font_size", 11)
-	save_notice.add_theme_color_override("font_color", Color("#fff2d7"))
-	save_notice.add_theme_color_override("font_shadow_color", Color("#513a31"))
+	save_notice.add_theme_color_override("font_color", Color("#51483F"))
+	save_notice.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#A8B4B1"), 3))
 	$Root.add_child(save_notice)
 
 func open_pause() -> void:

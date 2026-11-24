@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 id = &"milk"
-display_name = "Milk"
-description = "Fresh milk in a reusable village bottle."
+display_name = "Молоко"
+description = "Свежее молоко в стеклянной бутылке."
 icon = ExtResource("2")
 purchase_price = 7
 selling_price = 12

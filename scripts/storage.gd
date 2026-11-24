@@ -14,4 +14,4 @@ func _ready() -> void:
 		push_error("Storage initial stock is invalid; inventory left empty.")
 
 func _draw() -> void:
-	draw_texture(preload("res://assets/shop/storage.png"), Vector2(-32, -16))
+	draw_texture(preload("res://assets/shop/storage.png"), Vector2(-32, -22))

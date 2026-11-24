@@ -22,7 +22,7 @@ func reset_order() -> void:
 	for row in _rows.values():
 		row["amount"] = 1
 	message.remove_theme_color_override("font_color")
-	message.text = "Orders go straight to the stockroom."
+	message.text = "Заказы доставляются сразу в кладовую."
 	_refresh()
 
 func _add_row(item: ItemData) -> void:
@@ -60,7 +60,7 @@ func _add_row(item: ItemData) -> void:
 	stepper.name = "Quantity"
 	stepper.add_theme_constant_override("separation", 3)
 	row.add_child(stepper)
-	var less := _button("Less", "−", "Order one fewer %s" % item.display_name)
+	var less := _button("Less", "−", "Уменьшить количество: %s" % item.display_name)
 	less.pressed.connect(_adjust.bind(item.id, -1))
 	stepper.add_child(less)
 	var quantity := Label.new()
@@ -68,7 +68,7 @@ func _add_row(item: ItemData) -> void:
 	quantity.custom_minimum_size.x = 24
 	quantity.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	stepper.add_child(quantity)
-	var more := _button("More", "+", "Order one more %s" % item.display_name)
+	var more := _button("More", "+", "Увеличить количество: %s" % item.display_name)
 	more.pressed.connect(_adjust.bind(item.id, 1))
 	stepper.add_child(more)
 	var total := Label.new()
@@ -76,7 +76,7 @@ func _add_row(item: ItemData) -> void:
 	total.custom_minimum_size.x = 70
 	total.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	row.add_child(total)
-	var buy := _button("Buy", "Order", "Order %s" % item.display_name)
+	var buy := _button("Buy", "Заказать", "Заказать: %s" % item.display_name)
 	buy.theme_type_variation = &"OrderButton"
 	buy.custom_minimum_size.x = 62
 	buy.pressed.connect(_buy.bind(item.id))
@@ -108,27 +108,27 @@ func _buy(item_id: StringName) -> void:
 	var row: Dictionary = _rows[item_id]
 	var item: ItemData = row["item"]
 	var amount: int = row["amount"]
-	message.add_theme_color_override("font_color", Color("#8a3e2d"))
+	message.add_theme_color_override("font_color", Color("#8D513F"))
 	match _economy.buy(item_id, amount):
 		ShopEconomy.PurchaseResult.SUCCESS:
-			message.add_theme_color_override("font_color", Color("#45603c"))
-			message.text = "Delivered to storage: %s × %d." % [item.display_name, amount]
+			message.add_theme_color_override("font_color", Color("#546346"))
+			message.text = "В кладовую: %s × %d." % [item.display_name, amount]
 		ShopEconomy.PurchaseResult.INSUFFICIENT_FUNDS:
-			message.text = "You don't have enough coins for this order."
+			message.text = "Для заказа не хватает монет."
 		ShopEconomy.PurchaseResult.INSUFFICIENT_SPACE:
-			message.text = "There isn't enough room in storage for this order."
+			message.text = "В кладовой не хватает места."
 		_:
-			message.text = "This order couldn't be placed."
+			message.text = "Не удалось оформить заказ."
 
 func _refresh() -> void:
-	storage_label.text = "Storage  %d / %d units" % [_storage.total_units(), _storage.capacity]
+	storage_label.text = "Склад  %d / %d" % [_storage.total_units(), _storage.capacity]
 	for item_id in _rows:
 		var row: Dictionary = _rows[item_id]
 		var item: ItemData = row["item"]
 		var amount: int = row["amount"]
 		var cost := _economy.order_cost(item, amount)
-		row["stock"].text = "%d / unit  ·  %d in stock" % [item.purchase_price, _storage.quantity(item_id)]
+		row["stock"].text = "%d за шт.  ·  На складе %d" % [item.purchase_price, _storage.quantity(item_id)]
 		row["quantity"].text = str(amount)
-		row["total"].text = "%d coins" % cost if cost >= 0 else "Over budget"
+		row["total"].text = "%d монет" % cost if cost >= 0 else "Слишком дорого"
 		row["less"].disabled = amount <= 1
 		row["more"].disabled = amount >= row["limit"]

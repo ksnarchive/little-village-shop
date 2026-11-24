@@ -9,6 +9,9 @@ var enabled: bool = true
 var target: Interactable
 @onready var actor: Node2D = get_parent() as Node2D
 
+func _ready() -> void:
+	add_to_group("interaction_controllers")
+
 func _physics_process(_delta: float) -> void:
 	refresh_target()
 

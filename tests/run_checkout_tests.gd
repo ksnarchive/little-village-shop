@@ -197,8 +197,8 @@ func _test_cycle_and_queue() -> void:
 	await _key(KEY_E)
 	_check(ui.view == InventoryMenu.View.CHECKOUT and not shop.player.controls_enabled
 		and not shop.interactions.enabled, "Physical E opens checkout and blocks world/player input")
-	_check(menu._customer == original[0] and menu.product_label.text.contains("Apple")
-		and menu.product_label.text.contains("5 coins") and not menu.serve_button.disabled,
+	_check(menu._customer == original[0] and menu.product_label.text.contains("Яблоко")
+		and menu.product_label.text.contains("5 монет") and not menu.serve_button.disabled,
 		"Panel shows queue head, catalog icon, selling price and enabled service")
 	await process_frame
 	var rect := ui.panel.get_global_rect()
@@ -237,9 +237,9 @@ func _test_cycle_and_queue() -> void:
 	shop.economy.balance_changed.disconnect(on_balance)
 	shop.economy.sales_changed.disconnect(on_sales)
 	flow.queue_changed.disconnect(on_queue)
-	_check(menu.message.text.contains("Sold Apple!") and menu.message.text.contains("+5"), "Success feedback names product and coins")
-	_check(ui.balance_label.text == "93 coins" and menu.balance_label.text.contains("93")
-		and ui.sales_label.text.contains("Sales: 1"), "All balance/counter views update from signals")
+	_check(menu.message.text.contains("Продано: Яблоко!") and menu.message.text.contains("+5"), "Success feedback names product and coins")
+	_check(ui.balance_label.text == "93 монет" and menu.balance_label.text.contains("93")
+		and ui.sales_label.text.contains("Продаж 1"), "All balance/counter views update from signals")
 	_check(_coin_effects(ui).size() == 1 and _coin_effects(ui)[0].mouse_filter == Control.MOUSE_FILTER_IGNORE,
 		"One nonblocking coin effect plays for a successful sale")
 	var balance: int = shop.economy.balance

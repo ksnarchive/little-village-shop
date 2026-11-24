@@ -8,7 +8,7 @@ size = Vector2(64, 48)
 
 [node name="Shelf" type="Node2D"]
 script = ExtResource("1")
-prompt = "E  Arrange shelf"
+prompt = "E  Выложить товары"
 interaction_offset = Vector2(0, 32)
 catalog = ExtResource("2")
 capacity = 12

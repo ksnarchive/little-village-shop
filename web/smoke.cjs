@@ -12,7 +12,7 @@ async function check(name) {
   const options = name === 'chromium' ? {
     args: ['--no-sandbox', '--use-gl=angle', '--use-angle=swiftshader', '--enable-webgl', '--ignore-gpu-blocklist'],
     ...(process.env.CHROMIUM_PATH ? {executablePath: process.env.CHROMIUM_PATH} : {})
-  } : {};
+  } : (process.env.WEBKIT_PATH ? {executablePath: process.env.WEBKIT_PATH} : {});
   const browser = await ({chromium, webkit}[name]).launch(options);
   try {
     const context = await browser.newContext({viewport: {width: 844, height: 390}, hasTouch: true, isMobile: true, deviceScaleFactor: 3});
@@ -30,7 +30,11 @@ async function check(name) {
       await page.touchscreen.tap(b.x + x * b.width / 640, b.y + y * b.height / 360);
       await wait(250);
     };
-    const action = async code => { await page.locator(`[data-code="${code}"]`).tap(); await wait(250); };
+    const action = async code => {
+      const button = page.locator(`[data-code="${code}"]`);
+      if (code === 'KeyE' && !fullGameplay && await button.isDisabled()) return;
+      await button.tap(); await wait(250);
+    };
     // A held pointer exercises the same Pointer Events/capture path as a held finger.
     const hold = async (code, ms) => {
       const b = await page.locator(`[data-code="${code}"]`).boundingBox();
@@ -40,7 +44,9 @@ async function check(name) {
     const atlas = await fs.readFile(path.join(__dirname, '../assets/characters/villagers.png'), 'base64');
     // Observe rendered pixels: fixed walk durations drift on slower CI machines.
     // This reads the actual sprite, without reading or changing gameplay state.
-    const playerPosition = () => page.evaluate(async atlas => {
+    let lastPosition = {x: 320, y: 222};
+    const playerPosition = async () => {
+      const found = await page.evaluate(async ({atlas, lastPosition}) => {
       async function pixels(url) {
         const img = new Image(); img.src = url; await img.decode();
         const surface = document.createElement('canvas');
@@ -50,27 +56,53 @@ async function check(name) {
       }
       const source = await pixels('data:image/png;base64,' + atlas);
       const frame = await pixels(document.getElementById('canvas').toDataURL());
+      // Match the actual nearest-filtered sprite at the compact room's 1.15 zoom.
+      // Return world coordinates; gameplay checks still drive ordinary input.
+      const zoom = 1.15;
+      let best = null;
       for (let pose = 0; pose < 12; pose++) {
         const samples = [];
-        // Near furniture the head can be covered; the lower body stays visible.
-        for (let y = 16; y < 32; y += 2) for (let x = 0; x < 24; x += 2) {
+        for (let y = 4; y < 29; y++) for (let x = 3; x < 21; x++) {
           const i = (y * source.width + pose * 24 + x) * 4;
-          if (source.data[i + 3] === 255) samples.push([x, y, ...source.data.slice(i, i + 3)]);
+          // Flat interior pixels survive the zoom's subpixel phase unchanged.
+          const same = (dx, dy) => {
+            const j = ((y + dy) * source.width + pose * 24 + x + dx) * 4;
+            return [0, 1, 2, 3].every(c => source.data[j + c] === source.data[i + c]);
+          };
+          if (source.data[i + 3] === 255 && same(-1, 0) && same(1, 0) && same(0, -1) && same(0, 1)) samples.push([
+            Math.floor((x + .5) * zoom), Math.floor((y + .5) * zoom), ...source.data.slice(i, i + 3)
+          ]);
         }
-        for (let top = 70; top < 285; top++) for (let left = 140; left < 490; left++) {
-          let match = true;
-          for (const [x, y, r, g, b] of samples) {
+        // A 350ms held input moves at most 34 world pixels. Keeping the search
+        // near the previous observation also avoids similarly coloured decor.
+        const expectedLeft = (lastPosition.x - 12 - 320) * zoom + 320;
+        const expectedTop = (lastPosition.y - 20 - 180) * zoom + 180;
+        for (let top = Math.max(40, Math.floor(expectedTop - 55)); top < Math.min(325, expectedTop + 55); top++)
+          for (let left = Math.max(105, Math.floor(expectedLeft - 55)); left < Math.min(525, expectedLeft + 55); left++) {
+          let hits = 0;
+          for (let n = 0; n < samples.length; n++) {
+            const [x, y, r, g, b] = samples[n];
             const i = ((top + y) * frame.width + left + x) * 4;
-            if (frame.data[i] !== r || frame.data[i + 1] !== g || frame.data[i + 2] !== b) { match = false; break; }
+            if (frame.data[i] === r && frame.data[i + 1] === g && frame.data[i + 2] === b) hits++;
+            if (hits + samples.length - n - 1 < samples.length * .65) break;
           }
-          if (match) return {x: left + 12, y: top + 20};
+          const score = hits / samples.length;
+          if (score >= .65 && (!best || score > best.score)) best = {
+            x: (left + 12 * zoom - 320) / zoom + 320,
+            y: (top + 20 * zoom - 180) / zoom + 180, score
+          };
         }
       }
+      if (best) return best;
       throw new Error('Shopkeeper sprite not visible in the rendered world');
-    }, atlas);
+      }, {atlas, lastPosition});
+      lastPosition = found;
+      return found;
+    };
     const walkTo = async (x, y) => {
       for (let attempt = 0; attempt < 24; attempt++) {
         const position = await playerPosition();
+        if (process.env.TRACE_ROUTES) console.log({target: [x,y], position});
         const dx = x - position.x, dy = y - position.y;
         if (Math.abs(dx) <= 4 && Math.abs(dy) <= 4) return;
         const horizontal = Math.abs(dx) > Math.abs(dy);
@@ -116,7 +148,10 @@ async function check(name) {
     await awaitSave(data => data.economy.balance === '100');
     await action('KeyI'); await capture('bag'); await action('KeyI');
     if (fullGameplay) {
-      await walkTo(320, 255); await walkTo(424, 255); await action('KeyE');
+      await walkTo(320, 255); await walkTo(424, 255);
+      assert.equal(await page.locator('#action-label').textContent(), 'Заказать товары');
+      await action('KeyE');
+      assert(await page.locator('[data-code="KeyE"]').isDisabled(), 'Interaction is unavailable while a menu is open');
       await tap(500, 124); // Order one apple: 100 -> 97.
       await capture('supplier'); await action('Escape');
       await walkTo(208, 255); await action('KeyE');
@@ -128,7 +163,7 @@ async function check(name) {
       await walkTo(320, 180); await walkTo(320, 260); await walkTo(246, 260);
       await capture('interior');
       // Let the real clock reach 09:00 and the first real visitor reach the counter.
-      await wait(45000);
+      await wait(45000); await capture('visitors');
       await action('KeyE'); await capture('checkout-before');
       // The first visitor can still be walking on a slower CI renderer. Checkout
       // deliberately lets that visit finish; rejected taps must not create sales.
@@ -148,7 +183,7 @@ async function check(name) {
           const surface = document.createElement('canvas'); surface.width = 640; surface.height = 360;
           const ctx = surface.getContext('2d'); ctx.drawImage(img, 0, 0);
           const [r, g, b] = ctx.getImageData(130, 194, 1, 1).data;
-          return r < 180 && g > r && b < 160; // Enabled sage save button, not disabled cream.
+          return r === 188 && g === 197 && b === 172; // Enabled muted sage (#BCC5AC), distinct from disabled paper.
         });
         if (saveReady) break;
         await action('Escape'); await wait(500); await action('Escape');
@@ -189,6 +224,10 @@ async function check(name) {
     assert.deepEqual(errors, [], `${name}: browser/engine errors`);
     console.log(`${name}: touch UI, ${fullGameplay ? 'purchase/transfer/restock/sale' : 'D-pad/menus/manual-save'}, IndexedDB save + Continue, rotation: PASS`);
     await context.close();
+  } catch (error) {
+    const page = browser.contexts()[0]?.pages()[0];
+    if (page) await page.screenshot({path: `${output}/${name}-failure.png`, scale: 'css'}).catch(() => {});
+    throw error;
   } finally { await browser.close(); }
 }
 (async () => { await fs.mkdir(output, {recursive: true}); for (const name of engines) await check(name); })().catch(error => { console.error(error); process.exitCode = 1; });
