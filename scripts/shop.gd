@@ -1,5 +1,5 @@
 extends Node2D
-## Composition/wiring and original room art; authored geometry stays unchanged.
+## Composition/wiring and original vintage room art. Economy and save wiring are unchanged.
 const ROOM_ART: Texture2D = preload("res://assets/shop/room.png")
 const CHECKOUT_ART: Texture2D = preload("res://assets/shop/checkout.png")
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
@@ -97,7 +97,7 @@ func _solid(rect: Rect2) -> void:
 
 func _draw() -> void:
     draw_texture(ROOM_ART, Vector2.ZERO)
-    draw_texture(CHECKOUT_ART, Vector2(176, 260))
+    draw_texture(CHECKOUT_ART, Vector2(176, 252))
 
 func _refresh_save_status() -> void:
     inventory_ui.save_notice.text = last_save_message

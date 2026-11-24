@@ -133,21 +133,21 @@ func advance_in_queue(slot: int) -> void:
 func _draw() -> void:
 	VillagerArt.draw_actor(self, appearance + 1, facing, walking, _step)
 	if basket != null and basket.total_units() > 0:
-		draw_rect(Rect2(5, 1, 9, 8), Color("#765238"))
-		draw_rect(Rect2(6, 3, 7, 5), Color("#b78b59"))
-		draw_rect(Rect2(7, 4, 5, 1), Color("#d1ae76"))
-		draw_rect(Rect2(8, 3, 1, 5), Color("#947043"))
-		draw_rect(Rect2(11, 3, 1, 5), Color("#947043"))
+		draw_rect(Rect2(5, 1, 9, 8), Color("#51483F"))
+		draw_rect(Rect2(6, 3, 7, 5), Color("#C5A36F"))
+		draw_rect(Rect2(7, 4, 5, 1), Color("#C8AC70"))
+		draw_rect(Rect2(8, 3, 1, 5), Color("#80604B"))
+		draw_rect(Rect2(11, 3, 1, 5), Color("#80604B"))
 	# A catalog icon in a cream thought bubble shows held goods / waiting clearly.
 	if state == State.WAITING_AT_CHECKOUT or (basket != null and basket.total_units() > 0):
-		draw_rect(Rect2(-11, -40, 22, 21), Color("#765238"))
-		draw_rect(Rect2(-10, -39, 20, 19), Color("#f1deb7"))
-		draw_rect(Rect2(-1, -19, 3, 3), Color("#f1deb7"))
+		draw_rect(Rect2(-11, -40, 22, 21), Color("#51483F"))
+		draw_rect(Rect2(-10, -39, 20, 19), Color("#E9DFC8"))
+		draw_rect(Rect2(-1, -19, 3, 3), Color("#E9DFC8"))
 		for item in _catalog.items:
 			if basket.quantity(item.id) > 0 and item.icon != null:
 				draw_texture_rect(item.icon, Rect2(-8, -38, 16, 16), false)
 				break
 	elif state == State.SEARCHING or state == State.LEAVING:
-		draw_rect(Rect2(-6, -29, 12, 9), Color("#f1deb7"))
+		draw_rect(Rect2(-6, -29, 12, 9), Color("#E9DFC8"))
 		for x in [-3, 0, 3]:
-			draw_rect(Rect2(x, -25, 1, 1), Color("#765238"))
+			draw_rect(Rect2(x, -25, 1, 1), Color("#51483F"))

@@ -318,3 +318,86 @@ This is a separate graphical check, not the Godot 4.3 headless run.
   resolution testing. Dummy audio is used on this machine. Mesa reports unsupported
   V-Sync switching; this environment warning does not prevent rendering or capture.
   No new mechanics, locations, audio, save schema or migration were introduced.
+
+## Web / iPhone browser version
+
+- Branch `web-iphone-safari` starts at `stage-8-cozy-shop` **b187800**, including
+  the original updated interior from PR #8. PR #9 targets that branch; neither PR
+  has been merged into main. No gameplay, NPC, location or save-schema additions.
+- Official **Godot 4.3.stable.official.77dcf97d8**, final `tests/run_checks.sh`:
+  editor import, **189 + 61 + 72 + 80 + 127 = 529 checks, zero failures**, followed
+  by the 60-frame startup smoke. No logged engine/script errors. Existing native
+  keyboard/input, complete workdays, NPC routes, save failure/recovery checks pass.
+- Release `Web` export succeeds with 4.3 export templates, no engine/script errors.
+  Compatibility/WebGL 2, single-threaded, no GDExtension/PWA/service worker/COOP/COEP.
+  The release pack is about 116 KiB and the uncompressed engine wasm about 34 MiB;
+  hosting compression is separate. Documentation/tools/tests are excluded.
+- **Playwright 1.62.1, Linux Chromium and WebKit 26.5**, real release export served
+  over HTTP. Both completed `web/smoke.cjs` with **no JavaScript, HTTP, WebGL or
+  engine errors**. A fresh mobile context (844×390 CSS px, DPR 3) taps New Game,
+  uses the external D-pad/E/I/Esc and taps the real Godot menu buttons.
+- An initial CI browser run reached checkout while the first visitor was still
+  walking; its one premature service tap was correctly rejected and saving remained
+  blocked. The browser runner now keeps checkout open and retries service while that
+  visit settles, retaining the existing gameplay guards and asserting exactly one sale.
+  An additional slow-renderer replay showed fixed-duration walking could reach the
+  neighbouring object instead of storage. The runner now locates the actual shopkeeper
+  pixels using the committed atlas and steers via held on-screen buttons to each
+  approach point. It reads rendered images, never gameplay/debug state. The WebKit
+  replay of this navigation plus the full persistence scenario passed. A separate
+  PR replay admitted a new empty-handed visitor in the gap between closing checkout
+  and opening pause; the sale succeeded and saving was correctly disabled. The final
+  runner also waits visually for the enabled save button, allowing the real visitor
+  to leave between pause checks before persisting the exact expected sale state.
+- The browser scenario buys one apple (**100 → 97 coins**), takes three apples
+  through storage to bag, stocks one, waits for the production clock/real NPC,
+  serves that apple (**97 → 102**, revenue **5**, sales **1**), waits for the paid
+  exit and saves from pause. IndexedDB contains bag **2 apples**, storage **4 apples**,
+  empty orchard shelf and correct economy. Reload → Play → Continue → manual save
+  proves the restored game has identical inventories/accounting and advancing time.
+  No game-state/debug hooks, accelerated clock or fake customer is used.
+- The same test checks bounds of the entire canvas and all seven external buttons
+  at **390×844 portrait, 667×375 landscape and 844×300 landscape**, in addition to
+  844×390. Portrait displays a rotation hint; landscape is recommended for legibility.
+  Native web buttons have 44×44 minimums; the catalog retains vertical scrolling.
+- Separate real Chromium CDP touch events verified **two held directions plus E**
+  concurrently, `touchCancel` clearing all held buttons, and blur clearing a held
+  direction. This supplementary check used an external local harness. A raw native
+  640×360 canvas capture was compared with the source room PNG: floor region
+  `(250,80)-(290,150)` is byte-identical in RGB. Presentation-buffer antialiasing
+  does not soften the native interior texture; nearest scaling is retained.
+- WebKit originally logged `glBlitFramebuffer` attachment alias errors. Creating
+  a multisampled presentation context before engine initialization resolved them;
+  both final full browser scenarios passed without filtering or suppressing logs.
+  The internal Web viewport remains fixed 640×360, with no 2D MSAA or texture blur.
+  Linux WebKit used locally extracted official Debian libraries in its own browser
+  bundle; no OS package/security settings were changed.
+- Real unmodified CSS-resolution browser captures from WebKit:
+  [mobile interior](web-mobile-shop.png), [saved game](web-mobile-save.png).
+  Full workflow screenshots and logs are uploaded as `browser-validation`.
+  The shared visible Chrome lacks WebGL 2; it correctly showed the launch error
+  message. Positive rendering/gameplay checks above used headless software WebGL.
+- **Not tested on a physical iPhone or actual iOS Safari.** Linux WebKit shares the
+  browser engine but does not reproduce Apple GPU/drivers, iPhone memory limits,
+  browser chrome/safe-area hardware, system gestures or tab eviction. Safari device
+  performance and persistence after OS termination remain unverified. Ordinary reload
+  persistence, mobile input and bounds are verified in both available engines.
+- **Publication is blocked by repository configuration.** Pages creation through
+  the connected GitHub identity returned **403 Resource not accessible by integration**;
+  the intended public URL returned **404**. No public playable URL is claimed.
+  [Phone-only Pages setup and retry instructions](web-iphone.md#включение-github-pages-с-iphone)
+  explain Source = GitHub Actions, the environment branch rule and rerunning deploy.
+  The workflow uploads the tested artifact and verifies public `build-info.json`
+  against its exact commit after a successful deployment. Until that step succeeds,
+  publication of the new interior on GitHub Pages remains unverified.
+
+- Continuous release gate: `npm test` now checks real startup, touch D-pad/menus,
+  manual IndexedDB save, reload/Continue and viewport bounds in both browsers during
+  preparation. All 529 native logic/scene tests still run on every build. The longer
+  `npm run test:gameplay` remains available separately; visual recognition can be
+  interrupted by overlapping actors and real-time visitor admission. Both complete
+  browser gameplay scenarios passed in [CI run 45276534925](https://github.com/ksnarchive/little-village-shop/actions/runs/45276534925)
+  on `461d7d8`; the production game/scripts/settings/export/shell have not changed since
+  that verified build. Optional timing-sensitive gameplay automation does not gate
+  publication. Its intermittent failures are test-runner limitations, not evidence
+  of a Safari-device verification.

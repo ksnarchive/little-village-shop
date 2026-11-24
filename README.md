@@ -1,31 +1,22 @@
 # 🌿 Little Village Shop
 
-A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows.
+A cozy pixel-art shopkeeping prototype in **Godot 4.3 / GDScript**, targeting Windows and Web (iPhone Safari).
 
-## Cozy shop makeover (stage 8)
+## Autumn vintage shop (art refinement)
 
-![Updated shop with stocked shelves and three villagers](docs/stage-8-stocked-customers.png)
+![Current vintage shop — real Web release capture](docs/vintage-shop.png)
 
-Original pixel art made specifically for this project: staggered wooden floorboards,
-wood trim, curtained windows, brass lamps, paper signs, a botanical picture, small plants
-and woven rugs. Shelves have recessed wooden tiers and price tags; the sage stock chest,
-linen-covered supplier desk and checkout register share the same warm, muted palette.
-Apples, scored bread and capped milk bottles use clear 16×16 silhouettes. The shopkeeper
-and three villagers share a four-direction atlas with idle and two walking frames.
+The current art continues `feat/pastel-retro-shop` (PR #10): a worn but welcoming
+1960s–1970s village shop, with faded cream wallpaper, warm scratched boards,
+olive and grey-blue painted displays, walnut trim and terracotta accents.
+Peeling paper, chipped furniture, dusty boxes, a cracked jug and broken stool
+sit alongside soft pixel sunlight, autumn trees and a faded blue rug.
+Cream notebook panels have binding stitches, ink borders and muted buttons.
+The Russian UI, chibi silhouettes, close camera, mobile controls, gameplay and
+save format are retained. Restoration mechanics are planned separately.
 
-The room, furniture positions, collision shapes, NPC routes and all existing mechanics
-are retained. A fixed room camera keeps the entire interior visible while walking.
-The compact clock card leaves the north wall visible. Window light accents and stepped
-shadows are baked into the original art, compatible with Godot 4.3's Compatibility renderer.
-Nearest filtering, lossless textures without mipmaps, integer scaling and snapped render
-transforms keep pixels crisp; movement/physics remain continuous. Bag icons use native
-16px display, other product cards use 32px (2×).
-
-Real Godot 4.3 window captures: [whole shop](docs/stage-8-shop-overview.png) ·
-[stock and customers](docs/stage-8-stocked-customers.png) ·
-[storage interface](docs/stage-8-storage-menu.png). These are unmodified 1280×720 rendered
-frames at 2×, not mockups. Previous milestone images below document their older builds.
-See [art sources and regeneration](assets/README.md) and [validation](docs/validation.md#stage-8--visual-shop-makeover).
+[Art sources](assets/README.md) · [Validation and real desktop/mobile screenshots](docs/autumn-vintage.md).
+Earlier milestone screenshots below document their older builds.
 
 ## Playable slice
 
@@ -146,11 +137,20 @@ Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/d
 Previews: [main menu](docs/save-main-menu.png) · [manual save](docs/save-pause-menu.png) ·
 [busy shop explanation](docs/save-unsafe-menu.png) · [new game confirmation](docs/save-new-confirmation.png).
 
+## Web / iPhone
+
+Web branch: `web-iphone-safari`, based on the updated interior in `stage-8-cozy-shop`.
+[How to play and enable GitHub Pages from iPhone](docs/web-iphone.md).
+The target URL is not a promise of publication: check the deployment result in the PR.
+
 ## Run
 
 Open `project.godot` in Godot **4.3** and press F5. No external assets or plugins are needed.
 The base viewport is 640×360 with nearest filtering and integer canvas scaling.
-This is a desktop keyboard/mouse prototype; touch controls and a Windows export are pending.
+The Web export adds an external touch D-pad and E/I/Esc buttons, mobile layout and
+browser saves. See [iPhone play / GitHub Pages setup](docs/web-iphone.md) for the
+phone-only steps, deployment status caveat and browser limitations. Windows export
+remains pending.
 
 ## Code map
 
@@ -268,3 +268,14 @@ Headless results do not establish visual quality or Windows compatibility. See
 
 The current room and its mechanics are preserved; village expansion remains future work.
 All graphics are original project art; no commercial game sprites or third-party asset packs are used.
+
+
+## Пастельная ретро-лавка
+
+Ветка `feat/pastel-retro-shop` основана на `web-iphone-safari`.
+Оригинальные чиби-спрайты, светлая деревенская лавка с розовыми обоями,
+сиреневой кассой и мятным сундуком; русские пиксельные меню и контекстная
+кнопка действия на телефоне. Формат сохранений и экономика прежние.
+
+[Скриншоты и результаты проверок](docs/pastel-redesign.md) ·
+[Графика, исходники и лицензия шрифта](assets/README.md).

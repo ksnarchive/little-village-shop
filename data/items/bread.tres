@@ -6,8 +6,8 @@
 [resource]
 script = ExtResource("1")
 id = &"bread"
-display_name = "Bread"
-description = "A small loaf with a golden crust."
+display_name = "Хлеб"
+description = "Маленькая буханка с золотистой корочкой."
 icon = ExtResource("2")
 purchase_price = 5
 selling_price = 9
