@@ -298,10 +298,10 @@ func _style_hud() -> void:
 		label.remove_theme_color_override("font_color")
 		label.remove_theme_color_override("font_shadow_color")
 		label.add_theme_font_size_override("font_size", 14)
-	controls_hint.add_theme_stylebox_override("normal", _style(Color("#FFF2DF"), Color("#C7B8E4"), 4))
-	prompt_label.add_theme_stylebox_override("normal", _style(Color("#FFF2DF"), Color("#E8B9CA"), 5))
+	controls_hint.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#A8B4B1"), 4))
+	prompt_label.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#B7795F"), 5))
 	for label in [checkout_label, sales_label]:
-		label.add_theme_stylebox_override("normal", _style(Color("#FFF2DF"), Color("#E8B9CA"), 3))
+		label.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#B7795F"), 3))
 	prompt_label.hide()
 
 func _apply_theme() -> void:
@@ -312,42 +312,45 @@ static func cozy_theme() -> Theme:
 	cozy.default_font_size = 16
 	var pixel_font := preload("res://assets/fonts/VillagePixel-Regular.ttf")
 	cozy.default_font = pixel_font
-	cozy.set_color("font_color", "Label", Color("#685569"))
+	cozy.set_color("font_color", "Label", Color("#51483F"))
+	# Bound ledger paper: margins keep text clear of the binding.
 	var frame := StyleBoxTexture.new()
 	frame.texture = preload("res://assets/ui/panel.png")
 	frame.texture_margin_left = 8
 	frame.texture_margin_right = 8
 	frame.texture_margin_top = 8
 	frame.texture_margin_bottom = 8
-	frame.content_margin_left = 14
+	frame.content_margin_left = 18
 	frame.content_margin_right = 14
 	frame.content_margin_top = 12
 	frame.content_margin_bottom = 12
 	cozy.set_stylebox("panel", "PanelContainer", frame)
-	cozy.set_stylebox("normal", "Button", _style(Color("#B5D6CE"), Color("#85A9A6"), 6))
-	cozy.set_stylebox("hover", "Button", _style(Color("#D0E7DE"), Color("#85A9A6"), 6))
-	cozy.set_stylebox("pressed", "Button", _style(Color("#C7B8E4"), Color("#A58491"), 6))
-	cozy.set_stylebox("disabled", "Button", _style(Color("#E4DCE3"), Color("#CBBFCF"), 6))
-	var focus := _style(Color(0, 0, 0, 0), Color("#C7B8E4"), 6)
+	cozy.set_stylebox("normal", "Button", _style(Color("#BCC5AC"), Color("#879575"), 6))
+	cozy.set_stylebox("hover", "Button", _style(Color("#CDD3BE"), Color("#879575"), 6))
+	cozy.set_stylebox("pressed", "Button", _style(Color("#A8B4B1"), Color("#80604B"), 6))
+	cozy.set_stylebox("disabled", "Button", _style(Color("#D8D2C3"), Color("#BAB5A7"), 6))
+	var focus := _style(Color(0, 0, 0, 0), Color("#80604B"), 6)
+	focus.shadow_size = 0
+	focus.shadow_color = Color(0, 0, 0, 0)
 	cozy.set_stylebox("focus", "Button", focus)
-	cozy.set_color("font_color", "Button", Color("#685569"))
-	cozy.set_color("font_hover_color", "Button", Color("#685569"))
-	cozy.set_color("font_pressed_color", "Button", Color("#685569"))
-	cozy.set_color("font_focus_color", "Button", Color("#685569"))
-	cozy.set_color("font_disabled_color", "Button", Color("#A394A5"))
+	cozy.set_color("font_color", "Button", Color("#51483F"))
+	cozy.set_color("font_hover_color", "Button", Color("#51483F"))
+	cozy.set_color("font_pressed_color", "Button", Color("#51483F"))
+	cozy.set_color("font_focus_color", "Button", Color("#51483F"))
+	cozy.set_color("font_disabled_color", "Button", Color("#918B7D"))
 	for variation in [&"BalanceCard", &"ClockCard", &"OrderHeader", &"OrderRow"]:
 		cozy.set_type_variation(variation, &"PanelContainer")
-	cozy.set_stylebox("panel", &"ClockCard", _style(Color("#FFF2DF"), Color("#A58491"), 0))
-	cozy.set_stylebox("panel", &"BalanceCard", _style(Color("#FFF2DF"), Color("#A58491"), 5))
-	cozy.set_stylebox("panel", &"OrderHeader", _style(Color("#E3E9DE"), Color("#B5C9C0"), 8))
-	cozy.set_stylebox("panel", &"OrderRow", _style(Color("#FFF7EB"), Color("#E8CBCD"), 6))
+	cozy.set_stylebox("panel", &"ClockCard", _style(Color("#E9DFC8"), Color("#80604B"), 0))
+	cozy.set_stylebox("panel", &"BalanceCard", _style(Color("#E9DFC8"), Color("#80604B"), 5))
+	cozy.set_stylebox("panel", &"OrderHeader", _style(Color("#D8DDCF"), Color("#A8B4B1"), 8))
+	cozy.set_stylebox("panel", &"OrderRow", _style(Color("#F0E7D4"), Color("#C5B494"), 6))
 	cozy.set_type_variation(&"QuantityButton", &"Button")
-	cozy.set_stylebox("normal", &"QuantityButton", _style(Color("#E3E9DE"), Color("#B5C9C0"), 4))
-	cozy.set_color("font_color", &"QuantityButton", Color("#685569"))
+	cozy.set_stylebox("normal", &"QuantityButton", _style(Color("#D8DDCF"), Color("#A8B4B1"), 4))
+	cozy.set_color("font_color", &"QuantityButton", Color("#51483F"))
 	cozy.set_type_variation(&"OrderButton", &"Button")
-	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#B5D6CE"), Color("#85A9A6"), 4))
-	cozy.set_stylebox("background", "ProgressBar", _style(Color("#E1D3DF"), Color("#BCA6BD"), 0))
-	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#B5D6CE"), Color("#85A9A6"), 0))
+	cozy.set_stylebox("normal", &"OrderButton", _style(Color("#BCC5AC"), Color("#879575"), 4))
+	cozy.set_stylebox("background", "ProgressBar", _style(Color("#D3C8AE"), Color("#A5977D"), 0))
+	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#BCC5AC"), Color("#879575"), 0))
 	return cozy
 
 static func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
@@ -355,10 +358,10 @@ static func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
 	style.bg_color = fill
 	style.border_color = border
 	style.set_border_width_all(1)
-	style.corner_radius_top_left = 3
-	style.corner_radius_top_right = 3
-	style.corner_radius_bottom_left = 3
-	style.corner_radius_bottom_right = 3
+	style.corner_radius_top_left = 1
+	style.corner_radius_top_right = 1
+	style.corner_radius_bottom_left = 1
+	style.corner_radius_bottom_right = 1
 	style.corner_detail = 1
 	style.anti_aliasing = false
 	style.shadow_color = Color("#493e3038")
@@ -396,8 +399,8 @@ func _build_pause_menu() -> void:
 	save_notice.size.x = 230
 	save_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	save_notice.add_theme_font_size_override("font_size", 11)
-	save_notice.add_theme_color_override("font_color", Color("#685569"))
-	save_notice.add_theme_stylebox_override("normal", _style(Color("#FFF2DF"), Color("#C7B8E4"), 3))
+	save_notice.add_theme_color_override("font_color", Color("#51483F"))
+	save_notice.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#A8B4B1"), 3))
 	$Root.add_child(save_notice)
 
 func open_pause() -> void:

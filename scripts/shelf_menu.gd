@@ -124,10 +124,10 @@ func _transfer(item_id: StringName, from_shelf: bool) -> void:
 	var amount: int = _rows[item_id]["amount"]
 	# Revalidate at the model boundary even if the button was previously enabled.
 	if source.transfer_to(destination, item_id, amount):
-		message.add_theme_color_override("font_color", Color("#45603c"))
+		message.add_theme_color_override("font_color", Color("#546346"))
 		message.text = "В рюкзаке: %d шт." % amount if from_shelf else "На полке: %d шт." % amount
 	else:
-		message.add_theme_color_override("font_color", Color("#8a3e2d"))
+		message.add_theme_color_override("font_color", Color("#8D513F"))
 		message.text = "Не хватает товара или места."
 
 func _refresh() -> void:

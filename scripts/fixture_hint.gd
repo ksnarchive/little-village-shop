@@ -17,12 +17,12 @@ func _process(_delta: float) -> void:
 func _draw() -> void:
 	if not selected:
 		return
-	var color := Color("#FFF2DF")
+	var color := Color("#E9DFC8")
 	for point in [bounds.position, Vector2(bounds.end.x, bounds.position.y), bounds.end, Vector2(bounds.position.x, bounds.end.y)]:
 		var sx := 1 if point.x == bounds.position.x else -1
 		var sy := 1 if point.y == bounds.position.y else -1
-		draw_line(point, point + Vector2(7 * sx, 0), Color("#685569"), 4)
-		draw_line(point, point + Vector2(0, 7 * sy), Color("#685569"), 4)
+		draw_line(point, point + Vector2(7 * sx, 0), Color("#51483F"), 4)
+		draw_line(point, point + Vector2(0, 7 * sy), Color("#51483F"), 4)
 		draw_line(point, point + Vector2(6 * sx, 0), color, 2)
 		draw_line(point, point + Vector2(0, 6 * sy), color, 2)
 	if icon != null:

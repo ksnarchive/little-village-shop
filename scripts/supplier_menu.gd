@@ -108,10 +108,10 @@ func _buy(item_id: StringName) -> void:
 	var row: Dictionary = _rows[item_id]
 	var item: ItemData = row["item"]
 	var amount: int = row["amount"]
-	message.add_theme_color_override("font_color", Color("#8a3e2d"))
+	message.add_theme_color_override("font_color", Color("#8D513F"))
 	match _economy.buy(item_id, amount):
 		ShopEconomy.PurchaseResult.SUCCESS:
-			message.add_theme_color_override("font_color", Color("#45603c"))
+			message.add_theme_color_override("font_color", Color("#546346"))
 			message.text = "В кладовую: %s × %d." % [item.display_name, amount]
 		ShopEconomy.PurchaseResult.INSUFFICIENT_FUNDS:
 			message.text = "Для заказа не хватает монет."

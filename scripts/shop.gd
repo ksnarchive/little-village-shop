@@ -1,5 +1,5 @@
 extends Node2D
-## Composition/wiring and original pastel room art. Economy and save wiring are unchanged.
+## Composition/wiring and original vintage room art. Economy and save wiring are unchanged.
 const ROOM_ART: Texture2D = preload("res://assets/shop/room.png")
 const CHECKOUT_ART: Texture2D = preload("res://assets/shop/checkout.png")
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")

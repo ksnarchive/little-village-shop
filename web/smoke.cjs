@@ -183,7 +183,7 @@ async function check(name) {
           const surface = document.createElement('canvas'); surface.width = 640; surface.height = 360;
           const ctx = surface.getContext('2d'); ctx.drawImage(img, 0, 0);
           const [r, g, b] = ctx.getImageData(130, 194, 1, 1).data;
-          return g > r + 10 && b > r; // Enabled sage save button, not disabled cream.
+          return r === 188 && g === 197 && b === 172; // Enabled muted sage (#BCC5AC), distinct from disabled paper.
         });
         if (saveReady) break;
         await action('Escape'); await wait(500); await action('Escape');
