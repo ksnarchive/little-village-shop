@@ -27,9 +27,9 @@ async function check(engine) {
   const boot=async()=>{await page.locator('#start').tap();await page.waitForFunction(()=>document.body.dataset.gameReady==='true',null,{timeout:60000});await wait(1000);};
   const spritePixels=()=>page.evaluate(async()=>{
     const image=new Image();image.src=document.querySelector('#canvas').toDataURL();await image.decode();
-    const surface=document.createElement('canvas');surface.width=56;surface.height=64;
-    const ctx=surface.getContext('2d');ctx.drawImage(image,292,184,56,64,0,0,56,64);
-    return Array.from(ctx.getImageData(0,0,56,64).data);
+    const surface=document.createElement('canvas');surface.width=76;surface.height=96;
+    const ctx=surface.getContext('2d');ctx.drawImage(image,282,160,76,96,0,0,76,96);
+    return Array.from(ctx.getImageData(0,0,76,96).data);
   });
   const saved=()=>page.evaluate(()=>new Promise((resolve,reject)=>{
     const r=indexedDB.open('/userfs');r.onerror=()=>reject(r.error);r.onsuccess=()=>{

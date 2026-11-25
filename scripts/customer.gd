@@ -145,14 +145,14 @@ func _draw() -> void:
 		draw_rect(Rect2(11, 3, 1, 5), Color("#80604B"))
 	# A catalog icon in a cream thought bubble shows held goods / waiting clearly.
 	if state == State.WAITING_AT_CHECKOUT or (basket != null and basket.total_units() > 0):
-		draw_rect(Rect2(-11, -52, 22, 21), Color("#51483F"))
-		draw_rect(Rect2(-10, -51, 20, 19), Color("#E9DFC8"))
-		draw_rect(Rect2(-1, -31, 3, 3), Color("#E9DFC8"))
+		draw_rect(Rect2(-9, -66, 18, 17), Color("#51483F"))
+		draw_rect(Rect2(-8, -65, 16, 15), Color("#E9DFC8"))
+		draw_rect(Rect2(-1, -49, 3, 3), Color("#E9DFC8"))
 		for item in _catalog.items:
 			if basket.quantity(item.id) > 0 and item.icon != null:
-				draw_texture_rect(item.icon, Rect2(-8, -50, 16, 16), false)
+				draw_texture_rect(item.icon, Rect2(-6, -64, 13, 13), false)
 				break
 	elif state == State.SEARCHING or state == State.LEAVING:
-		draw_rect(Rect2(-6, -41, 12, 9), Color("#E9DFC8"))
+		draw_rect(Rect2(-6, -58, 12, 9), Color("#E9DFC8"))
 		for x in [-3, 0, 3]:
-			draw_rect(Rect2(x, -37, 1, 1), Color("#51483F"))
+			draw_rect(Rect2(x, -54, 1, 1), Color("#51483F"))

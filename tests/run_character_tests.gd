@@ -163,3 +163,14 @@ func _check_art() -> void:
 	var a := CharacterArt.target_rect(CharacterArt.ORIGIN, 1.0, 0, true)
 	var b := CharacterArt.target_rect(CharacterArt.ORIGIN, 1.0, 1, true)
 	check(is_equal_approx(a.end.y, b.end.y), "Breathing keeps the feet anchored")
+	check(is_equal_approx(a.end.y, 10.0), "Larger visuals preserve the existing floor anchor")
+	var queue_fits := true
+	for texture in [VillagerArt.HEADS, VillagerArt.CLOTHES]:
+		var image: Image = texture.get_image()
+		for variant in range(3):
+			for column in range(image.get_width() / 64):
+				var used := image.get_region(Rect2i(column * 64, variant * 96, 64, 96)).get_used_rect()
+				var left := CharacterArt.ORIGIN.x + used.position.x * CharacterArt.WORLD_SIZE.x / 64
+				var right := CharacterArt.ORIGIN.x + used.end.x * CharacterArt.WORLD_SIZE.x / 64
+				queue_fits = queue_fits and left >= -14.0 and right <= 14.0
+	check(queue_fits, "All buyer silhouettes and walk poses fit the unchanged 28px queue spacing")

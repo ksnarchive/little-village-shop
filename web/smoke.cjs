@@ -78,7 +78,7 @@ async function check(name) {
       // Match the actual nearest-filtered sprite at the compact room's 1.15 zoom.
       // Return world coordinates; gameplay checks still drive ordinary input.
       const zoom = 1.15;
-      const artScale = 28 / 64 * zoom;
+      const artScale = 40 / 64 * zoom;
       let best = null;
       for (let pose = 0; pose < 8; pose++) {
         const samples = [];
@@ -97,8 +97,8 @@ async function check(name) {
         if (samples.length < 20) throw new Error('Too few stable illustrated actor probes');
         // A 350ms held input moves at most 34 world pixels. Keeping the search
         // near the previous observation also avoids similarly coloured decor.
-        const expectedLeft = (lastPosition.x - 14 - 320) * zoom + 320;
-        const expectedTop = (lastPosition.y - 32 - 180) * zoom + 180;
+        const expectedLeft = (lastPosition.x - 20 - 320) * zoom + 320;
+        const expectedTop = (lastPosition.y - 50 - 180) * zoom + 180;
         for (let top = Math.max(40, Math.floor(expectedTop - 55)); top < Math.min(325, expectedTop + 55); top++)
           for (let left = Math.max(105, Math.floor(expectedLeft - 55)); left < Math.min(525, expectedLeft + 55); left++) {
           let hits = 0;
@@ -110,8 +110,8 @@ async function check(name) {
           }
           const score = hits / samples.length;
           if (score >= .65 && (!best || score > best.score)) best = {
-            x: (left + 14 * zoom - 320) / zoom + 320,
-            y: (top + 32 * zoom - 180) / zoom + 180, score
+            x: (left + 20 * zoom - 320) / zoom + 320,
+            y: (top + 50 * zoom - 180) / zoom + 180, score
           };
         }
       }

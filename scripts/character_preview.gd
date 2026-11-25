@@ -15,9 +15,10 @@ func _draw() -> void:
 	draw_texture_rect(preload("res://assets/frontend/dressing_room.png"), Rect2(offset, Vector2(288, 320) * zoom), false)
 	# The exact same registered actor appears in the glass and on the rug.
 	draw_set_transform(offset + Vector2(89, 0) * zoom, 0.0, Vector2(-1, 1))
-	CharacterArt.draw_actor(self, appearance, facing, walking, elapsed, Vector2(-34, 74) * zoom, 2.4 * zoom, elapsed / 8.0, false)
+	CharacterArt.draw_actor(self, appearance, facing, walking, elapsed, Vector2(-44, 44) * zoom, 2.184 * zoom, elapsed / 8.0, false)
 	draw_set_transform(Vector2.ZERO)
 	# The portrait editor has a shallow art panel above its 44px turn controls.
 	var compact := size.x > size.y
-	var hero := Vector2(135, 142 if compact else 166)
-	CharacterArt.draw_actor(self, appearance, facing, walking, elapsed, offset + hero * zoom, (3.0 if compact else 3.2) * zoom, elapsed / 8.0)
+	# Compensate for the larger world scale: previews grow 30%, with fixed feet.
+	var hero := Vector2(122, 105 if compact else 127)
+	CharacterArt.draw_actor(self, appearance, facing, walking, elapsed, offset + hero * zoom, (2.73 if compact else 2.912) * zoom, elapsed / 8.0)

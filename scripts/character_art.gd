@@ -5,8 +5,8 @@ const CELL := Vector2i(64, 96)
 const POSES := 8 # neutral, blink, six walking phases
 const HEAD_POSES := 2
 const HAIR_POSES := 3 # neutral, tips lagging left / right
-const WORLD_SIZE := Vector2(28, 42)
-const ORIGIN := Vector2(-14, -32)
+const WORLD_SIZE := Vector2(40, 60)
+const ORIGIN := Vector2(-20, -50) # Preserve the original bottom/ground anchor at y=10.
 const BODY: Texture2D = preload("res://assets/characters/body.png")
 const CLOTHES: Texture2D = preload("res://assets/characters/clothes.png")
 const HANDS: Texture2D = preload("res://assets/characters/hands.png")
