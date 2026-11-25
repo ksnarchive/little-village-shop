@@ -48,7 +48,7 @@ func _run() -> void:
 	check(store.apply(old, shop), "Original v1 save is accepted")
 	check(shop.player.appearance == CharacterAppearance.DEFAULT, "Old save gets deterministic default character")
 	check(store.capture(shop).economy == old.economy and store.capture(shop).storage == old.storage, "Migration preserves progress")
-	check(store.save_game(shop) and store.read_save(shop).version == 2, "Next explicit save upgrades v1 to v2")
+	check(store.save_game(shop) and store.read_save(shop).version == SaveStore.VERSION, "Next explicit save upgrades v1 to current schema")
 	for bad in [null, {}, {"name": ""}, {"name": "A\nB"}]:
 		var invalid := snapshot.duplicate(true)
 		invalid.character = bad
@@ -110,9 +110,10 @@ func _run() -> void:
 	check(entry.creator.error.text.contains("Не удалось"), "Write failure is visible in wardrobe")
 	entry.store = store
 	entry.creator.confirm_button.pressed.emit()
-	check(entry.creator == null and not entry.menu.visible and entry.shop.player.appearance.name == "Мира", "Confirm enters existing shop with chosen character")
+	check(entry.creator == null and entry.train != null and entry.menu.visible and entry.shop.player.appearance.name == "Мира", "Confirm enters train with chosen character")
 	check(store.read_save(entry.shop).character == JSON.parse_string(JSON.stringify(entry.shop.player.appearance)), "First morning saves character with progress")
 	entry.free()
+	await process_frame # Release pending scene tweens before shutting down the test tree.
 	clean()
 	print("Little Village Shop character: %d checks, %d failures" % [checks, failures])
 	quit(0 if failures == 0 else 1)

@@ -25,4 +25,5 @@ run_checked --headless --path . --fixed-fps 60 --script res://tests/run_day_test
 run_checked --headless --path . --fixed-fps 60 --script res://tests/run_save_tests.gd
 run_checked --headless --path . --script res://tests/run_visual_tests.gd
 run_checked --headless --path . --script res://tests/run_character_tests.gd
+run_checked --headless --path . --script res://tests/run_train_tests.gd
 run_checked --headless --path . --quit-after 60

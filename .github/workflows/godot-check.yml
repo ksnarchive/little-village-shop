@@ -19,5 +19,5 @@ jobs:
           version: 4.3.0
           use-dotnet: false
           cache: true
-      - name: Import, test inventory, interactions, customers, checkout, workdays, saves, character creation and migration, smoke-test main scene
+      - name: Import, test inventory, interactions, customers, checkout, workdays, saves, character creation, migration and train intro, smoke-test main scene
         run: bash tests/run_checks.sh

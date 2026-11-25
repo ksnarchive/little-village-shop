@@ -6,6 +6,7 @@ const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
 var player_inventory: Inventory
 var economy: ShopEconomy
 var save_store: SaveStore
+var story := TrainStory.completed()
 var last_save_message: String = ""
 var day: ShopDay
 @onready var player: Shopkeeper = $Player

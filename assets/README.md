@@ -72,3 +72,30 @@ row; other layers use one row. White and grey skin, eye and hair ramps are tinte
 by `CharacterArt`. Numeric option IDs in `CharacterAppearance` are save-format
 IDs: append future options rather than reorder them. Clothes are painted in the
 shop's autumn palette and are available to every character.
+
+## Поезд: иллюстрация и слои внешности
+
+Новые оригинальные пиксельные иллюстрации и атласы созданы для проекта с помощью
+image generation по художественному заданию; изображения пользователя служили
+референсами материалов, света и композиции, а не исходниками для копирования.
+Редактируемые растровые мастера находятся в `art/train/` и исключены из импорта
+и веб-сборки через `art/.gdignore`.
+
+`tools/build_train_art.py` готовит две композиции, прозрачные оконные проёмы,
+трёхкадровые шторы, световые пластины, пар и бесшовные панорамы. Палитра каждой
+основной пластины ограничена 256 цветами, фильтрация nearest. Полные мастера не
+загружаются во время игры. `tools/build_train_actor.py` выделяет независимые
+цветовые материалы кожи, волос и радужки; эти материалы окрашиваются значениями
+существующего `CharacterAppearance`. Восемь причёсок и шесть нарядов сохраняют
+прежние ID и доступны всем персонажам.
+
+```sh
+python3 tools/build_train_art.py
+python3 tools/build_train_actor.py
+```
+
+Готовые PNG включены в репозиторий; Python и Pillow нужны только для подготовки
+ресурсов. Звук `train/rails.wav` — прежний оригинальный PCM-цикл колёс из PR #14,
+22 050 Гц, 6 секунд; художественная доработка его не меняет.
+
+[Описание оформления и реальные скриншоты](../docs/train-art-direction.md).

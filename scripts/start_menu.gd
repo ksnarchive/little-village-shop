@@ -13,6 +13,7 @@ var status: Label
 var root: Control
 var panel: PanelContainer
 var backdrop: Control
+var train: Control
 var creator: Control
 var settings_panel: PanelContainer
 var settings := ConfigFile.new()
@@ -107,7 +108,7 @@ func continue_game() -> void:
 	if not store.load_game(shop):
 		refresh()
 		return
-	_start()
+	_resume_story()
 
 func request_new_game() -> void:
 	if store.exists():
@@ -147,6 +148,7 @@ func _create_character(appearance: Dictionary) -> void:
 	candidate.inventory_ui.get_node("Root").hide()
 	candidate.save_store = store
 	candidate.player.set_appearance(appearance)
+	candidate.story = TrainStory.fresh()
 	if not candidate.save_game():
 		creator.error.text = store.message
 		candidate.free()
@@ -156,6 +158,34 @@ func _create_character(appearance: Dictionary) -> void:
 	creator.hide()
 	creator.queue_free()
 	creator = null
+	_resume_story()
+
+func _resume_story() -> void:
+	if shop.story.train_complete:
+		_start()
+		return
+	panel.hide()
+	backdrop.hide()
+	train = preload("res://scenes/train_intro.tscn").instantiate()
+	train.appearance = shop.player.appearance.duplicate()
+	train.line = int(shop.story.train_line)
+	train.animated = animations
+	train.checkpoint = _save_train_checkpoint
+	root.add_child(train)
+	train.finished.connect(_train_finished)
+
+func _save_train_checkpoint(line: int, complete: bool) -> bool:
+	var previous: Dictionary = shop.story.duplicate(true)
+	shop.story = {"train_line": line, "train_complete": complete}
+	if not shop.save_game():
+		shop.story = previous
+		return false
+	return true
+
+func _train_finished() -> void:
+	train.hide()
+	train.queue_free()
+	train = null
 	_start()
 
 func _start() -> void:
@@ -175,7 +205,7 @@ func open_settings() -> void:
 	settings_panel.add_child(box)
 	box.add_child(FrontendUI.label("Настройки", 24))
 	var check := CheckButton.new()
-	check.text = "Движение облаков и листьев"
+	check.text = "Анимации пейзажа и поезда"
 	check.custom_minimum_size.y = 44
 	check.button_pressed = animations
 	check.toggled.connect(func(value: bool):
@@ -234,7 +264,7 @@ func _update_viewport() -> void:
 		JavaScriptBridge.eval("window.resizeGame && window.resizeGame()")
 
 func _unhandled_input(event: InputEvent) -> void:
-	if _frontend and event.is_action_pressed("ui_cancel"):
+	if _frontend and train == null and event.is_action_pressed("ui_cancel"):
 		if settings_panel != null:
 			_close_settings()
 		elif creator == null:
