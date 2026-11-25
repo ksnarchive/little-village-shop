@@ -1,8 +1,17 @@
 extends Control
-## All scene geometry is in a 640 x 300 pixel canvas. Cover-crop keeps the
-## window, seated hero and suitcase together when rotating a phone.
-const ROOM = preload("res://assets/train/carriage.png")
+## Raster paintings and baked animation plates. Nothing here mutates game state.
+const ROOMS = [preload("res://assets/train/carriage.png"), preload("res://assets/train/carriage_1.png"), preload("res://assets/train/carriage_2.png")]
+const PORTRAITS = [preload("res://assets/train/carriage_portrait.png"), preload("res://assets/train/carriage_portrait_1.png"), preload("res://assets/train/carriage_portrait_2.png")]
+const LIGHTS = [preload("res://assets/train/carriage_light.png"), preload("res://assets/train/carriage_portrait_light.png")]
 const LAYERS = [preload("res://assets/train/sky.png"), preload("res://assets/train/hills.png"), preload("res://assets/train/fields.png"), preload("res://assets/train/trees.png")]
+const HEAD = preload("res://assets/train/seated_head.png")
+const HANDS = preload("res://assets/train/seated_hands.png")
+const CLOTHES = preload("res://assets/train/seated_clothes.png")
+const HAIR = preload("res://assets/train/seated_hair.png")
+const EYES = preload("res://assets/train/seated_eyes.png")
+const LIDS = preload("res://assets/train/seated_lids.png")
+const FACE = preload("res://assets/train/seated_face.png")
+const STEAM = preload("res://assets/train/steam.png")
 var appearance := CharacterAppearance.DEFAULT.duplicate()
 var animated := true
 var speed := 1.0
@@ -11,45 +20,71 @@ var elapsed := 0.0
 
 func _process(delta: float) -> void:
 	if animated:
-		distance = fmod(distance + delta * speed * 34.0, 7680.0)
-		elapsed += delta * speed
+		distance = fmod(distance + delta * speed * 20.0, 15360.0)
+		elapsed += delta
 		queue_redraw()
 
 func _draw() -> void:
-	var zoom := maxf(size.x / 640.0, size.y / 300.0)
-	var offset := ((size - Vector2(640, 300) * zoom) / 2).floor()
-	offset.y = minf(0, size.y - 248.0 * zoom)
-	# At most one source pixel of carriage movement, never move the UI.
-	var sway := floorf(sin(elapsed * 2.0) * 0.65) if animated else 0.0
-	draw_set_transform(offset + Vector2(0, sway) * zoom, 0, Vector2.ONE * zoom)
-	for index in range(LAYERS.size()):
-		var travel := floorf(distance * [0.0, 0.16, 0.50, 1.6][index])
-		# Draw only the visible window region, sampling a seamless repeated strip.
-		var start := fmod(travel, 768.0)
-		var first := minf(330.0, 768.0 - start)
-		draw_texture_rect_region(LAYERS[index], Rect2(155, 59, first, 110), Rect2(start, 0, first, 110))
-		if first < 330:
-			draw_texture_rect_region(LAYERS[index], Rect2(155 + first, 59, 330 - first, 110), Rect2(0, 0, 330 - first, 110))
-	draw_texture(ROOM, Vector2.ZERO)
-	# Seated pose reuses the actual chosen layers above the knees. Bent legs
-	# replace the walking feet; the name and appearance never get copied back.
-	var origin := Vector2(289, 169)
-	var source := Rect2(216, 0, 24, 25)
-	var target := Rect2(origin, Vector2(48, 50))
-	draw_texture_rect_region(CharacterArt.BODY, target, source, Color(CharacterAppearance.SKIN[int(appearance.skin)]))
-	source.position.y = int(appearance.outfit) * 32
-	draw_texture_rect_region(CharacterArt.CLOTHES, target, source)
-	source.position.y = 0
-	draw_texture_rect_region(CharacterArt.FACE, target, source)
-	draw_texture_rect_region(CharacterArt.EYES, target, source, Color(CharacterAppearance.EYES[int(appearance.eyes)]))
-	source.position.y = int(appearance.hairstyle) * 32
-	draw_texture_rect_region(CharacterArt.HAIR, target, source, Color(CharacterAppearance.HAIR[int(appearance.hair_color)]))
-	draw_rect(Rect2(307, 215, 23, 8), Color("#575b53"))
-	draw_rect(Rect2(321, 219, 9, 17), Color("#575b53"))
-	draw_rect(Rect2(310, 215, 18, 2), Color("#737367"))
-	draw_rect(Rect2(320, 235, 15, 5), Color("#48453c"))
-	# Glass glints and a gentle lamp flicker, quantized to pixel shapes.
-	draw_colored_polygon(PackedVector2Array([Vector2(172,62), Vector2(181,62), Vector2(236,167), Vector2(227,167)]), Color(0.95,0.88,0.70,0.08))
-	var glow := 0.035 + (sin(elapsed * 0.7) * 0.008 if animated else 0.0)
-	draw_rect(Rect2(273, 32, 96, 16), Color(1.0,0.86,0.58,glow))
+	draw_rect(Rect2(Vector2.ZERO, size), Color("#25191f"))
+	var portrait := size.x < 540
+	var art_size := Vector2(400, 600) if portrait else Vector2(640, 360)
+	var zoom := minf(size.x / art_size.x, (size.y - 108) / 600.0) if portrait else minf(size.x / 640.0, size.y / 360.0)
+	zoom = maxf(0.1, zoom)
+	var offset := Vector2((size.x - art_size.x * zoom) / 2, 0 if portrait else -8 * zoom).floor()
+	var sway := sin(elapsed * 1.7) * 0.35 * speed if animated else 0.0
+	draw_set_transform(offset + Vector2(0, sway), 0, Vector2.ONE * zoom)
+	var window := Rect2(4, 72, 200, 224) if portrait else Rect2(15, 20, 371, 180)
+	# Moving terrain is hidden by the painted window aperture. The curtains
+	# and bevel retain their own alpha edge, including each cloth animation frame.
+	_strip(0, window, 0.0)
+	_strip(1, Rect2(window.position + Vector2(0, window.size.y * 0.10), window.size * Vector2(1, 0.90)), 0.16)
+	_strip(2, Rect2(window.position + Vector2(0, window.size.y * 0.27), window.size * Vector2(1, 0.73)), 0.58)
+	_strip(3, Rect2(window.position + Vector2(0, window.size.y * 0.57), window.size * Vector2(1, 0.43)), 1.5)
+	var frame := 0
+	if animated:
+		var cloth := sin(elapsed * 0.65)
+		frame = 1 if cloth < -0.45 else (2 if cloth > 0.45 else 0)
+	draw_texture(PORTRAITS[frame] if portrait else ROOMS[frame], Vector2.ZERO)
+	var actor := Vector2(240, 243) if portrait else Vector2(430, 110)
+	_draw_seated(actor)
+	if animated:
+		draw_texture(LIGHTS[1 if portrait else 0], Vector2(sin(elapsed * 0.23) * 2.0, cos(elapsed * 0.19)), Color(1, 0.9, 0.7, 0.34))
+	# A passing tree's broad shadow affects the painting and hero, never the UI.
+	var phase := fmod(elapsed, 17.0)
+	if animated and phase > 12.0 and phase < 14.5:
+		var shade := sin((phase - 12.0) / 2.5 * PI) * 0.20 * speed
+		draw_rect(Rect2(Vector2.ZERO, art_size), Color(0.06, 0.09, 0.11, shade))
+	var tea := Vector2(103, 289) if portrait else Vector2(174, 171)
+	var steam_frame := int(elapsed * 3) % 12 if animated else 0
+	draw_texture_rect_region(STEAM, Rect2(tea, Vector2(48, 64)), Rect2(steam_frame * 48, 0, 48, 64))
 	draw_set_transform(Vector2.ZERO)
+
+func _strip(index: int, destination: Rect2, rate: float) -> void:
+	var travel := fmod(floorf(distance * rate), 1536.0)
+	# Preserve pixel scale across all terrain layers; each panorama has a
+	# mirrored continuation so the wrap cannot expose a vertical seam.
+	var width := destination.size.x
+	var first := minf(width, 1536.0 - travel)
+	draw_texture_rect_region(LAYERS[index], Rect2(destination.position, Vector2(first, destination.size.y)), Rect2(travel, 0, first, 128))
+	if first < width:
+		draw_texture_rect_region(LAYERS[index], Rect2(destination.position + Vector2(first, 0), Vector2(width - first, destination.size.y)), Rect2(0, 0, width - first, 128))
+
+func _draw_seated(origin: Vector2) -> void:
+	var breath := sin(elapsed * 1.35) * 0.65 if animated else 0.0
+	# Breathing expands the torso/head by less than a source pixel while the
+	# soles stay planted. Full garments contain the lap, knees, sleeves and shoes.
+	var target := Rect2(origin - Vector2(0, breath), Vector2(96, 144 + breath))
+	var source := Rect2(0, int(appearance.hairstyle) * 144, 96, 144)
+	draw_texture_rect_region(HEAD, target, source, Color(CharacterAppearance.SKIN[int(appearance.skin)]))
+	source.position.y = int(appearance.outfit) * 144
+	draw_texture_rect_region(CLOTHES, target, source)
+	source.position.y = int(appearance.outfit) * 144
+	draw_texture_rect_region(HANDS, target, source, Color(CharacterAppearance.SKIN[int(appearance.skin)]))
+	source.position.y = int(appearance.hairstyle) * 144
+	draw_texture_rect_region(HAIR, target, source, Color(CharacterAppearance.HAIR[int(appearance.hair_color)]))
+	draw_texture_rect_region(FACE, target, source)
+	var blink := animated and fmod(elapsed + 2.4, 6.7) > 6.54
+	if blink:
+		draw_texture_rect_region(LIDS, target, source, Color(CharacterAppearance.SKIN[int(appearance.skin)]))
+	source.position.y = int(appearance.hairstyle) * 288 + (144 if blink else 0)
+	draw_texture_rect_region(EYES, target, source, Color(CharacterAppearance.EYES[int(appearance.eyes)]))

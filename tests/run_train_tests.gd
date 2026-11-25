@@ -36,6 +36,14 @@ func _run() -> void:
 	entry._create_character(look)
 	var train: Control = entry.train
 	check(train != null and entry.menu.visible and entry.creator == null, "New character boards a separate scene")
+	var before_view: Dictionary = entry.store.capture(entry.shop)
+	train.scenery_button.pressed.emit()
+	check(not train.dialogue.visible and not train.skip_button.visible, "Scenery view hides UI without changing story")
+	train.advance()
+	check(train.dialogue.visible and train.line == 0 and entry.store.capture(entry.shop) == before_view, "Returning from illustration never skips a thought or saves progress")
+	check(train.view.CLOTHES.get_height() == 6 * 144 and train.view.HANDS.get_height() == 6 * 144, "All six complete seated outfits retain their own hands and poses")
+	check(train.view.HEAD.get_height() == 8 * 144 and train.view.HAIR.get_height() == 8 * 144, "All eight selected hairstyles have complete painted portraits")
+	check(train.view.EYES.get_height() == 16 * 144, "Each portrait supports independent iris tint and blink")
 	check(train.appearance == look and entry.shop.player.appearance == look, "Chosen name and all appearance layers board intact")
 	check(entry.shop.process_mode == Node.PROCESS_MODE_DISABLED and not entry.shop.inventory_ui.get_node("Root").visible, "Shop and its UI stay disabled during intro")
 	var snapshot: Dictionary = entry.store.capture(entry.shop)
@@ -91,6 +99,10 @@ func _run() -> void:
 		for control in [train.dialogue, train.next_button, train.skip_button]:
 			check(Rect2(Vector2.ZERO, dimensions).encloses(control.get_global_rect()), "Dialogue and controls fit %s" % dimensions)
 		check(train.next_button.size.y >= 44 and train.skip_button.size.y >= 44, "Touch targets remain 44 pixels")
+		train.heading.text = "WWWWWWWWWWWWWWWWWWWWWWWW · ПРО СЕБЯ"
+		await process_frame
+		await process_frame
+		check(Rect2(Vector2.ZERO, dimensions).encloses(train.dialogue.get_rect()), "Long saved name cannot widen the compact panel at %s" % dimensions)
 		for text in TrainStory.THOUGHTS + [TrainStory.ARRIVAL]:
 			train.words.text = text
 			await process_frame

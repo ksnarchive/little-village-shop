@@ -6,7 +6,8 @@
     "test:gameplay": "node smoke.cjs --gameplay",
     "capture:frontend": "node frontend.cjs --docs",
     "capture:review": "node capture-review.cjs",
-    "capture:train": "node train.cjs --docs"
+    "capture:train": "node train.cjs --docs",
+    "capture:train-art": "node capture-train-art.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"
