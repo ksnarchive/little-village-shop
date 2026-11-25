@@ -298,14 +298,14 @@ func _style_hud() -> void:
 		label.remove_theme_color_override("font_color")
 		label.remove_theme_color_override("font_shadow_color")
 		label.add_theme_font_size_override("font_size", 14)
-	controls_hint.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#A8B4B1"), 4))
-	prompt_label.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#B7795F"), 5))
+	controls_hint.add_theme_stylebox_override("normal", _style(Color("#F3E4C5"), Color("#94513A"), 4))
+	prompt_label.add_theme_stylebox_override("normal", _style(Color("#F6D47D"), Color("#94513A"), 5))
 	for label in [checkout_label, sales_label]:
-		label.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#B7795F"), 3))
+		label.add_theme_stylebox_override("normal", _style(Color("#F3E4C5"), Color("#94513A"), 3))
 	prompt_label.hide()
 
 func _apply_theme() -> void:
-	$Root.theme = cozy_theme()
+	$Root.theme = shop_theme()
 
 static func cozy_theme() -> Theme:
 	var cozy := Theme.new()
@@ -353,6 +353,34 @@ static func cozy_theme() -> Theme:
 	cozy.set_stylebox("fill", "ProgressBar", _style(Color("#BCC5AC"), Color("#879575"), 0))
 	return cozy
 
+static func shop_theme() -> Theme:
+	# Scoped to the shop's Root. Frontend, wardrobe and train keep cozy_theme().
+	var theme := cozy_theme()
+	theme.set_color("font_color", "Label", Color("#57312E"))
+	var paper := theme.get_stylebox("panel", "PanelContainer").duplicate() as StyleBoxTexture
+	paper.texture = preload("res://assets/ui/shop_panel.png")
+	theme.set_stylebox("panel", "PanelContainer", paper)
+	for type in ["Button", "QuantityButton", "OrderButton"]:
+		var normal_padding := 6 if type == "Button" else 4
+		theme.set_stylebox("normal", type, _style(Color("#354E43"), Color("#57312E"), normal_padding))
+		theme.set_stylebox("hover", type, _style(Color("#496B55"), Color("#D58B39"), 6))
+		theme.set_stylebox("pressed", type, _style(Color("#57312E"), Color("#F6D47D"), 6))
+		theme.set_stylebox("disabled", type, _style(Color("#C9B696"), Color("#A18869"), 6))
+		var focus := _style(Color(0, 0, 0, 0), Color("#D58B39"), 6)
+		focus.shadow_size = 0
+		focus.shadow_color = Color(0, 0, 0, 0)
+		theme.set_stylebox("focus", type, focus)
+		for state in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+			theme.set_color(state, type, Color("#F3E4C5"))
+		theme.set_color("font_disabled_color", type, Color("#7D6C57"))
+	theme.set_stylebox("panel", "ClockCard", _style(Color("#F3E4C5"), Color("#94513A"), 0))
+	theme.set_stylebox("panel", "BalanceCard", _style(Color("#F3E4C5"), Color("#94513A"), 5))
+	theme.set_stylebox("panel", "OrderHeader", _style(Color("#DFCAA5"), Color("#94513A"), 8))
+	theme.set_stylebox("panel", "OrderRow", _style(Color("#EFDFBF"), Color("#B28A57"), 6))
+	theme.set_stylebox("background", "ProgressBar", _style(Color("#CFB58C"), Color("#94513A"), 0))
+	theme.set_stylebox("fill", "ProgressBar", _style(Color("#D58B39"), Color("#94513A"), 0))
+	return theme
+
 static func _style(fill: Color, border: Color, padding: int) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
 	style.bg_color = fill
@@ -399,8 +427,8 @@ func _build_pause_menu() -> void:
 	save_notice.size.x = 230
 	save_notice.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	save_notice.add_theme_font_size_override("font_size", 11)
-	save_notice.add_theme_color_override("font_color", Color("#51483F"))
-	save_notice.add_theme_stylebox_override("normal", _style(Color("#E9DFC8"), Color("#A8B4B1"), 3))
+	save_notice.add_theme_color_override("font_color", Color("#57312E"))
+	save_notice.add_theme_stylebox_override("normal", _style(Color("#F3E4C5"), Color("#94513A"), 3))
 	$Root.add_child(save_notice)
 
 func open_pause() -> void:

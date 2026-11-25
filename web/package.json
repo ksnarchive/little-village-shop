@@ -8,6 +8,7 @@
     "capture:review": "node capture-review.cjs",
     "capture:train": "node train.cjs --docs",
     "capture:train-art": "node capture-train-art.cjs",
+    "capture:shop-art": "node capture-shop-art.cjs",
     "test:ios-keyboard": "node ios-keyboard.cjs"
   },
   "devDependencies": {

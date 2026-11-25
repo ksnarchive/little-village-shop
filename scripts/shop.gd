@@ -1,6 +1,5 @@
 extends Node2D
-## Composition/wiring and original vintage room art. Economy and save wiring are unchanged.
-const ROOM_ART: Texture2D = preload("res://assets/shop/room.png")
+## Composition/wiring; reusable art modules live in scenes/art/shop_interior.tscn.
 const CHECKOUT_ART: Texture2D = preload("res://assets/shop/checkout.png")
 const CATALOG: ItemCatalog = preload("res://data/item_catalog.tres")
 var player_inventory: Inventory
@@ -97,7 +96,6 @@ func _solid(rect: Rect2) -> void:
     add_child(body)
 
 func _draw() -> void:
-    draw_texture(ROOM_ART, Vector2.ZERO)
     draw_texture(CHECKOUT_ART, Vector2(176, 252))
 
 func _refresh_save_status() -> void:
