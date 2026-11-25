@@ -1,0 +1,200 @@
+[gd_scene load_steps=17 format=3]
+
+[ext_resource type="Texture2D" path="res://assets/shop/modular/floor.png" id="1"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/wallpaper.png" id="2"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/plaster.png" id="3"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/wainscot.png" id="4"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/baseboard.png" id="5"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/post.png" id="6"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/wide_window.png" id="7"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/side_window.png" id="8"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/radio_ledge.png" id="9"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/cabinet.png" id="10"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/clutter.png" id="11"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/plaster_damage.png" id="12"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/rug.png" id="13"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/sunlight.png" id="14"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/dust.png" id="15"]
+[ext_resource type="Texture2D" path="res://assets/shop/modular/wall_shadow.png" id="16"]
+
+[node name="ShopInterior" type="Node2D"]
+z_index = -10
+
+[node name="Floor" type="Sprite2D" parent="."]
+position = Vector2(128, 64)
+centered = false
+texture = ExtResource("1")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 384, 248)
+
+[node name="NorthWall" type="Sprite2D" parent="."]
+position = Vector2(80, 16)
+centered = false
+texture = ExtResource("2")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 480, 48)
+
+[node name="WestWall" type="Sprite2D" parent="."]
+position = Vector2(80, 64)
+centered = false
+texture = ExtResource("2")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 232)
+
+[node name="EastWall" type="Sprite2D" parent="."]
+position = Vector2(496, 64)
+centered = false
+texture = ExtResource("3")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 232)
+
+[node name="WestWainscot" type="Sprite2D" parent="."]
+position = Vector2(80, 207)
+centered = false
+texture = ExtResource("4")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 89)
+
+[node name="EastWainscot" type="Sprite2D" parent="."]
+position = Vector2(496, 207)
+centered = false
+texture = ExtResource("4")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 64, 89)
+
+[node name="NorthBaseboard" type="Sprite2D" parent="."]
+position = Vector2(80, 52)
+centered = false
+texture = ExtResource("5")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 480, 12)
+
+[node name="SouthLeftWall" type="Sprite2D" parent="."]
+position = Vector2(80, 296)
+centered = false
+texture = ExtResource("5")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 224, 16)
+
+[node name="SouthRightWall" type="Sprite2D" parent="."]
+position = Vector2(336, 296)
+centered = false
+texture = ExtResource("5")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 224, 16)
+
+[node name="WestPost" type="Sprite2D" parent="."]
+position = Vector2(128, 64)
+centered = false
+texture = ExtResource("6")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 232)
+
+[node name="EastPost" type="Sprite2D" parent="."]
+position = Vector2(496, 64)
+centered = false
+texture = ExtResource("6")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 16, 232)
+
+[node name="NorthWindow" type="Sprite2D" parent="."]
+position = Vector2(258, 18)
+centered = false
+texture = ExtResource("7")
+
+[node name="WestWindow" type="Sprite2D" parent="."]
+position = Vector2(84, 77)
+centered = false
+texture = ExtResource("8")
+
+[node name="EastWindow" type="Sprite2D" parent="."]
+position = Vector2(510, 75)
+centered = false
+texture = ExtResource("8")
+
+[node name="WestRadio" type="Sprite2D" parent="."]
+position = Vector2(84, 177)
+centered = false
+texture = ExtResource("9")
+
+[node name="WestCabinet" type="Sprite2D" parent="."]
+position = Vector2(82, 207)
+centered = false
+texture = ExtResource("10")
+
+[node name="EastCabinet" type="Sprite2D" parent="."]
+position = Vector2(512, 205)
+centered = false
+texture = ExtResource("10")
+flip_h = true
+
+[node name="WestClutter" type="Sprite2D" parent="."]
+position = Vector2(84, 264)
+centered = false
+texture = ExtResource("11")
+
+[node name="EastClutter" type="Sprite2D" parent="."]
+position = Vector2(514, 266)
+centered = false
+texture = ExtResource("11")
+flip_h = true
+
+[node name="WestDamage" type="Sprite2D" parent="."]
+position = Vector2(84, 29)
+centered = false
+texture = ExtResource("12")
+
+[node name="EastDamage" type="Sprite2D" parent="."]
+position = Vector2(514, 164)
+centered = false
+texture = ExtResource("12")
+
+[node name="Rug" type="Sprite2D" parent="."]
+position = Vector2(286, 205)
+centered = false
+texture = ExtResource("13")
+
+[node name="EntryMat" type="Sprite2D" parent="."]
+position = Vector2(288, 280)
+scale = Vector2(0.941176, 0.555556)
+centered = false
+texture = ExtResource("13")
+
+[node name="SunlightWest" type="Sprite2D" parent="."]
+position = Vector2(144, 84)
+centered = false
+texture = ExtResource("14")
+
+[node name="SunlightEast" type="Sprite2D" parent="."]
+position = Vector2(320, 139)
+centered = false
+texture = ExtResource("14")
+
+[node name="FloorDustNorth" type="Sprite2D" parent="."]
+position = Vector2(235, 74)
+centered = false
+texture = ExtResource("15")
+
+[node name="FloorDustSouth" type="Sprite2D" parent="."]
+position = Vector2(372, 238)
+centered = false
+texture = ExtResource("15")
+
+[node name="NorthContactShadow" type="Sprite2D" parent="."]
+position = Vector2(144, 64)
+centered = false
+texture = ExtResource("16")
+texture_repeat = 2
+region_enabled = true
+region_rect = Rect2(0, 0, 352, 12)
