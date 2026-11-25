@@ -130,7 +130,8 @@ func confirm_new_game() -> void:
 	root.add_child(creator)
 	creator.confirmed.connect(_create_character)
 	creator.cancelled.connect(_cancel_creator)
-	creator.name_input.grab_focus()
+	# Opening the editor must not summon the mobile keyboard.
+	creator.confirm_button.grab_focus()
 
 func _cancel_creator() -> void:
 	creator.hide()
@@ -257,7 +258,7 @@ func _process(_delta: float) -> void:
 func _update_viewport() -> void:
 	if not OS.has_feature("web"):
 		return
-	var portrait := _frontend and bool(JavaScriptBridge.eval("window.innerHeight > window.innerWidth"))
+	var portrait := _frontend and bool(JavaScriptBridge.eval("window.isGamePortrait ? window.isGamePortrait() : window.innerHeight > window.innerWidth"))
 	var target := Vector2i(400, 740) if portrait else Vector2i(640, 360)
 	if get_viewport().content_scale_size != target:
 		get_viewport().content_scale_size = target

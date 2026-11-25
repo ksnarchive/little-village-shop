@@ -15,7 +15,7 @@ async function check(engine){
  const image=()=>page.locator('#canvas').evaluate(c=>c.toDataURL());
  try{
   await page.goto(process.env.GAME_URL||'http://127.0.0.1:8060/');await boot();await tap(150,177);
-  await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Тая');await tap(600,138);await tap(600,186);await tap(450,320);
+  await tap(450,90);await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Тая');await tap(600,138);await tap(600,186);await tap(450,320);
   const initial=await until(d=>d.story?.train_line===0&&!d.story.train_complete);assert.equal(initial.character.name,'Тая');assert.equal(initial.version,3);assert.equal(await page.locator('#movement').isVisible(),false);
   await wait(4200);assert.equal((await saved()).story.train_line,0,'No auto-advancing dialogue');await capture('train-interior-dialogue');
   const frame=await image();await wait(550);assert.notEqual(await image(),frame,'Rendered landscape moves');

@@ -8,7 +8,7 @@ const {chromium,devices}=require('playwright');
  const capture=async name=>{await page.screenshot({path:`../docs/${name}.png`,scale:'css'});console.log(name)};
  try{
   await page.goto(process.env.GAME_URL||'http://127.0.0.1:8060/');await page.locator('#start').tap();await page.waitForFunction(()=>document.body.dataset.gameReady==='true');await wait(900);
-  await tap(150,177);await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Тая');await tap(600,186);await tap(450,320);await wait(4200);
+  await tap(150,177);await tap(450,90);await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Тая');await tap(600,186);await tap(450,320);await wait(4200);
   await capture('train-art-monologue');await page.keyboard.press('h');await wait(200);await capture('train-art-full-scene');await tap(100,120);
   await page.setViewportSize({width:390,height:844});await wait(900);await capture('train-art-iphone-portrait');
   await page.setViewportSize({width:844,height:390});await wait(900);await capture('train-art-iphone-landscape');

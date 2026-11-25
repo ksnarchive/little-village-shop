@@ -77,6 +77,7 @@ func _run() -> void:
 	entry.request_new_game()
 	entry.confirm_new_game()
 	var wardrobe: Control = entry.creator
+	check(not wardrobe.name_input.has_focus() and wardrobe.confirm_button.has_focus(), "Opening wardrobe focuses a non-text action, never the name/keyboard")
 	var bytes := FileAccess.get_file_as_string(PATH)
 	wardrobe.name_input.text = " "
 	wardrobe.name_input.text_changed.emit(" ")
