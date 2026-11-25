@@ -16,13 +16,12 @@ var scroll: ScrollContainer
 var walk_button: Button
 
 func _ready() -> void:
-	theme = InventoryMenu.cozy_theme()
+	theme = InventoryMenu.shop_theme()
 	rng.randomize()
 	var background := TextureRect.new()
-	background.texture = preload("res://assets/frontend/dressing_room.png")
+	background.texture = preload("res://assets/frontend/wardrobe_ambient.png")
 	background.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	background.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	background.modulate = Color("#b6ad98")
 	background.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(background)
 	FrontendUI.full(background)
@@ -51,10 +50,10 @@ func _ready() -> void:
 	fields.add_child(name_row)
 	name_row.add_child(FrontendUI.label("Имя"))
 	name_input = LineEdit.new()
-	name_input.add_theme_stylebox_override("normal", InventoryMenu._style(Color("#F0E7D4"), Color("#A5977D"), 6))
-	name_input.add_theme_stylebox_override("focus", InventoryMenu._style(Color("#F5ECD9"), Color("#80604B"), 6))
-	name_input.add_theme_color_override("font_color", Color("#51483F"))
-	name_input.add_theme_color_override("caret_color", Color("#80604B"))
+	name_input.add_theme_stylebox_override("normal", InventoryMenu._style(Color("#F3E4C5"), Color("#94513A"), 6))
+	name_input.add_theme_stylebox_override("focus", InventoryMenu._style(Color("#F6D47D"), Color("#94513A"), 6))
+	name_input.add_theme_color_override("font_color", Color("#57312E"))
+	name_input.add_theme_color_override("caret_color", Color("#57312E"))
 	name_input.placeholder_text = "Как вас зовут?"
 	name_input.text = appearance.name
 	name_input.max_length = 24
