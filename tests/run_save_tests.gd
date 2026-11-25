@@ -130,7 +130,7 @@ func _invalid_data(store: SaveStore, shop: Node2D) -> void:
 	write_text(TEST_PATH, "{bad json")
 	check(not store.load_game(shop) and store.message.contains("повреждено"), "Corrupt save without backup is explained")
 	check(store.capture(shop) == good, "Corrupt load changes nothing")
-	for version in [0, 3]:
+	for version in [0, SaveStore.VERSION + 1]:
 		var data := good.duplicate(true)
 		data.version = version
 		write_text(TEST_PATH, JSON.stringify(data))
@@ -256,6 +256,8 @@ func _entry_menu() -> void:
 	check(entry.shop.player_inventory.total_units() == 0 and entry.shop.storage.inventory.total_units() == 13 and entry.shop.customers.is_empty(), "New game has demo goods and no duplicate objects")
 	check(entry.store.read_save(entry.shop).day == 1, "Confirmed new game replaces slot")
 	entry.free()
+	await process_frame
+	OS.delay_msec(50) # Fixed-fps tests can exit before the audio mixer releases its stopped WAV.
 
 func json_form(data: Dictionary) -> Dictionary:
 	# Godot dictionary equality distinguishes integer and JSON floating-point variants.

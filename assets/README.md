@@ -72,3 +72,18 @@ row; other layers use one row. White and grey skin, eye and hair ramps are tinte
 by `CharacterArt`. Numeric option IDs in `CharacterAppearance` are save-format
 IDs: append future options rather than reorder them. Clothes are painted in the
 shop's autumn palette and are available to every character.
+
+## Поезд: оригинальные рисунки и звук
+
+`train/carriage.png` — пиксельный интерьер 640×300 с прозрачным окном.
+`train/{sky,hills,fields,trees}.png` — бесшовные слои осеннего пейзажа 768×110.
+`train/rails.wav` — тихий оригинальный синтезированный звук колёс, mono PCM,
+22 050 Гц, 6 секунд. Графика и аудио создаются воспроизводимо с seed 1973:
+
+```sh
+python3 tools/build_train_art.py
+```
+
+Нужны Python и Pillow; готовые ресурсы включены в репозиторий. Сторонние
+изображения, сэмплы и музыка не используются. Поза сидящего героя собирается
+из существующих слоёв внешности в `scripts/train_view.gd`.

@@ -158,7 +158,8 @@ async function check(name) {
     await page.goto(url);
     await start(); await tap(150, 177); // New game, fresh isolated browser context.
     await tap(450, 320); // Confirm default character in the separate wardrobe.
-    await awaitSave(data => data.economy.balance === '100');
+    await require('./train-helpers.cjs').skipTrain(page,tap);
+    await awaitSave(data => data.economy.balance === '100' && data.story.train_complete);
     await action('KeyI'); await capture('bag'); await action('KeyI');
     if (fullGameplay) {
       await walkTo(320, 255); await walkTo(424, 255);

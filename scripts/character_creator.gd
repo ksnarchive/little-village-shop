@@ -89,7 +89,7 @@ func _ready() -> void:
 	random_button = FrontendUI.button("Случайно", randomize_appearance)
 	random_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	actions.add_child(random_button)
-	confirm_button = FrontendUI.button("Всё готово — в лавку", _confirm)
+	confirm_button = FrontendUI.button("Всё готово — в путь", _confirm)
 	content.add_child(confirm_button)
 	turn_row = HBoxContainer.new()
 	turn_row.add_theme_constant_override("separation", 4)

@@ -68,6 +68,7 @@ const previous = '1'.repeat(40);
     await page.goto(url);
     await page.waitForFunction(sha => document.documentElement.dataset.build === sha, previous);
     await boot(); await tap(150,177); await tap(450,320);
+    await require('./train-helpers.cjs').skipTrain(page,tap);
     await page.waitForFunction(() => !document.body.classList.contains('frontend'));
     await page.waitForTimeout(2000);
     const before = await persisted();

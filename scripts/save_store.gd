@@ -1,7 +1,7 @@
 class_name SaveStore
 extends RefCounted
 ## One slot, validated JSON and atomic rename; .bak is the previous valid generation.
-const VERSION := 2
+const VERSION := 3
 const MAX_FILE_BYTES := 65536
 const MAX_SAFE_INTEGER := 9007199254740991
 const ECONOMY_KEYS := ["balance", "revenue", "completed_sales", "day_revenue", "day_sales", "day_expenses"]
@@ -28,12 +28,14 @@ func capture(shop: Node2D) -> Dictionary:
 	return {"version": VERSION, "day": shop.day.day_number, "minute": shop.day.minute,
 		"phase": int(shop.day.phase), "economy": economy, "bag": shop.player_inventory.serialize(),
 		"storage": shop.storage.inventory.serialize(), "shelves": shelves,
-		"character": shop.player.appearance.duplicate(true)}
+		"character": shop.player.appearance.duplicate(true), "story": shop.story.duplicate(true)}
 
 func validate(data: Variant, shop: Node2D) -> bool:
 	if not data is Dictionary or not _whole(data.get("version"), 1, VERSION):
 		return false
 	if int(data.version) >= 2 and not CharacterAppearance.valid(data.get("character")):
+		return false
+	if int(data.version) >= 3 and not TrainStory.valid(data.get("story")):
 		return false
 	if not _whole(data.get("day"), 1, MAX_SAFE_INTEGER - 1):
 		return false
@@ -102,7 +104,7 @@ func read_save(shop: Node2D) -> Dictionary:
 	if validate(data, shop):
 		return data
 	# A newer/older schema must never be silently replaced with an older backup.
-	if data is Dictionary and data.has("version") and data.version not in [1, VERSION]:
+	if data is Dictionary and data.has("version") and data.version not in [1, 2, VERSION]:
 		message = "Версия сохранения не поддерживается. Файл сохранён без изменений."
 		return {}
 	var backup: Variant = _read(path + ".bak")
@@ -165,6 +167,8 @@ func apply(data: Dictionary, shop: Node2D) -> bool:
 		return false
 	# Validate everything first. Replace quantities before any notification sees the state.
 	shop.player.set_appearance(data.character if int(data.version) >= 2 else CharacterAppearance.DEFAULT)
+	shop.story = data.story.duplicate(true) if int(data.version) >= 3 else TrainStory.completed()
+	shop.story.train_line = int(shop.story.train_line)
 	shop.customers.reset_for_load()
 	shop.economy.restore_snapshot(data.economy)
 	var inventories: Array[Inventory] = [shop.player_inventory, shop.storage.inventory]
