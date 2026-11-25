@@ -2,12 +2,13 @@
   "name": "little-village-shop-web-checks",
   "private": true,
   "scripts": {
-    "test": "node smoke.cjs && node frontend.cjs && node train.cjs && node cache-upgrade.cjs",
+    "test": "node smoke.cjs && node frontend.cjs && node train.cjs && node cache-upgrade.cjs && node ios-keyboard.cjs",
     "test:gameplay": "node smoke.cjs --gameplay",
     "capture:frontend": "node frontend.cjs --docs",
     "capture:review": "node capture-review.cjs",
     "capture:train": "node train.cjs --docs",
-    "capture:train-art": "node capture-train-art.cjs"
+    "capture:train-art": "node capture-train-art.cjs",
+    "test:ios-keyboard": "node ios-keyboard.cjs"
   },
   "devDependencies": {
     "playwright": "1.62.1"

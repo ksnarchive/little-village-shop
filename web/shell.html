@@ -9,9 +9,16 @@
 * { box-sizing: border-box; }
 html, body { margin: 0; width: 100%; height: 100%; overflow: hidden; background: #D5CDBB; color: #51483F; font: 14px system-ui, sans-serif; }
 body { -webkit-user-select: none; user-select: none; overscroll-behavior: none; }
-#layout { height: 100%; height: 100dvh; padding: max(4px, env(safe-area-inset-top)) max(4px, env(safe-area-inset-right)) max(4px, env(safe-area-inset-bottom)) max(4px, env(safe-area-inset-left)); display: flex; align-items: center; justify-content: center; gap: 6px; }
+:root { --safe-top: max(4px, env(safe-area-inset-top)); --safe-right: max(4px, env(safe-area-inset-right)); --safe-bottom: max(4px, env(safe-area-inset-bottom)); --safe-left: max(4px, env(safe-area-inset-left)); }
+#layout, #status { position: fixed; left: var(--game-left, 0px); top: var(--game-top, 0px); width: var(--game-width, 100%); height: var(--game-height, 100%); }
+#layout { padding: var(--safe-top) var(--safe-right) var(--safe-bottom) var(--safe-left); display: flex; align-items: center; justify-content: center; gap: 6px; }
 #screen { flex: 1; min-width: 0; height: 100%; display: flex; align-items: center; justify-content: center; }
 #canvas { display: block; width: 640px; height: 360px; image-rendering: pixelated; image-rendering: crisp-edges; touch-action: none; outline: none; }
+/* Godot 4.3 creates these keyboard/IME proxies dynamically. CSS applies before
+   focus(), independently of the game's logical font size or canvas CSS scale. */
+#screen input, #screen textarea, #screen [contenteditable="true"] { font-size: 16px !important; }
+/* Godot supplies viewport-relative canvas rects; #layout is now positioned. */
+#screen input, #screen textarea { position: fixed !important; }
 .rail { display: none; flex: 0 0 82px; align-items: center; justify-content: center; gap: 6px; }
 .touch .rail { display: flex; }
 .frontend .rail { display: none; }
@@ -27,11 +34,11 @@ button.held, button:active { background: #A8B4B1; }
 #actions small { font-size: 11px; line-height: 1.1; display: block; }
 button:disabled { opacity: .45; }
 button:focus-visible { outline: 2px solid #80604B; outline-offset: 2px; }
-#status { position: fixed; inset: 0; background: #D5CDBB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; z-index: 2; }
+#status { background: #D5CDBB; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 14px; padding: 24px; text-align: center; z-index: 2; }
 #status[hidden] { display: none; }
 #start { min-width: 180px; }
 #notice { max-width: 520px; white-space: pre-line; }
-#rotate { position: fixed; bottom: max(4px, env(safe-area-inset-bottom)); left: 0; right: 0; text-align: center; font-size: 12px; pointer-events: none; display: none; }
+#rotate { position: absolute; bottom: var(--safe-bottom); left: 0; right: 0; text-align: center; font-size: 12px; pointer-events: none; display: none; }
 @media (orientation: portrait) { .touch #layout { flex-wrap: wrap; align-content: center; } .touch #screen { flex: 0 0 100%; height: 56vw; order: -1; } .touch .rail { flex: 1; } .touch #actions { flex-direction: row; flex-wrap: wrap; } .touch #actions button { width: 80px; } .touch #rotate { display: block; } }
 </style>
 $GODOT_HEAD_INCLUDE
@@ -50,8 +57,8 @@ $GODOT_HEAD_INCLUDE
     <button data-code="KeyI" aria-label="Рюкзак">I<small>Рюкзак</small></button>
     <button data-code="Escape" aria-label="Меню">☰<small>Меню</small></button>
   </nav>
-</main>
 <div id="rotate">Поверните iPhone горизонтально — так удобнее играть.</div>
+</main>
 <section id="status" role="status">
   <strong>Лавка в маленькой деревне</strong>
   <div id="notice">Поверните телефон горизонтально.
@@ -102,9 +109,38 @@ controls.forEach(button => { button.disabled = true; });
 let frontend = true;
 document.body.classList.add("frontend");
 window.setFrontend = active => { frontend = active; releaseAll(); document.body.classList.toggle("frontend", active); resize(); };
+// A keyboard changes the visual viewport, not the phone's orientation.
+// Both the shell and Godot use this same choice of logical canvas dimensions.
+window.isGamePortrait = () => {
+  if (touch) {
+    const type = window.screen.orientation?.type;
+    if (type) return type.startsWith('portrait');
+    if (typeof window.orientation === 'number') return Math.abs(window.orientation) % 180 === 0;
+  }
+  return matchMedia('(orientation: portrait)').matches;
+};
+function updateVisibleArea() {
+  const view = window.visualViewport;
+  // Do not counteract a deliberate pinch zoom by shrinking/recentring the game.
+  // Use layout bounds while zoomed, so rotation still works without counter-zoom.
+  // Input fonts prevent iOS focus zoom; no viewport-meta/scale reset is needed.
+  const useVisual = view && Math.abs(view.scale - 1) <= 0.01;
+  const root = document.documentElement;
+  const values = {
+    left: useVisual ? view.offsetLeft : 0,
+    top: useVisual ? view.offsetTop : 0,
+    width: useVisual ? view.width : root.clientWidth,
+    height: useVisual ? view.height : Math.min(root.clientHeight, window.innerHeight)
+  };
+  for (const [key, value] of Object.entries(values)) {
+    const pixels = `${Math.max(key === 'width' || key === 'height' ? 1 : 0, value)}px`;
+    if (root.style.getPropertyValue(`--game-${key}`) !== pixels) root.style.setProperty(`--game-${key}`, pixels);
+  }
+}
 function resize() {
+  updateVisibleArea();
   const box = document.getElementById('screen').getBoundingClientRect();
-  const portrait = frontend && window.innerHeight > window.innerWidth;
+  const portrait = frontend && window.isGamePortrait();
   const width = portrait ? 400 : 640;
   const height = portrait ? 740 : 360;
   // Policy 0 leaves the backing buffer to this shell. Godot detects the change
@@ -118,11 +154,36 @@ function resize() {
   const scale = integerScale >= fit * 0.9 ? integerScale : fit;
   canvas.style.width = `${width * scale}px`;
   canvas.style.height = `${height * scale}px`;
+  // Keep the active virtual-keyboard proxy aligned after Safari pans/shrinks
+  // its visual viewport. Do not focus/blur it or alter its value/selection.
+  const rect = canvas.getBoundingClientRect();
+  for (const field of document.querySelectorAll('#screen input, #screen textarea')) {
+    if (field.style.display === 'none') continue;
+    Object.assign(field.style, {left: `${rect.left}px`, top: `${rect.top}px`, width: `${rect.width}px`, height: `${rect.height}px`});
+  }
 }
 window.resizeGame = resize;
-new ResizeObserver(resize).observe(document.getElementById('screen'));
-window.addEventListener('orientationchange', releaseAll);
-window.addEventListener('resize', resize);
+let resizeFrame = 0;
+function queueResize() {
+  if (!resizeFrame) resizeFrame = requestAnimationFrame(() => { resizeFrame = 0; resize(); });
+}
+let settleTimer;
+function settleViewport() {
+  queueResize();
+  clearTimeout(settleTimer);
+  // Safari may finish dismissing its keyboard after focusout has already fired.
+  settleTimer = setTimeout(queueResize, 350);
+}
+new ResizeObserver(queueResize).observe(document.getElementById('screen'));
+window.addEventListener('orientationchange', () => { releaseAll(); settleViewport(); });
+window.screen.orientation?.addEventListener?.('change', settleViewport);
+window.addEventListener('resize', queueResize);
+window.addEventListener('pageshow', settleViewport);
+window.visualViewport?.addEventListener('resize', queueResize);
+window.visualViewport?.addEventListener('scroll', queueResize);
+for (const type of ['focusin', 'focusout']) document.addEventListener(type, event => {
+  if (event.target.matches('input, textarea, [contenteditable="true"]')) settleViewport();
+});
 const keys = {ArrowUp: ['ArrowUp', 38], ArrowDown: ['ArrowDown', 40], ArrowLeft: ['ArrowLeft', 37], ArrowRight: ['ArrowRight', 39], KeyE: ['e', 69], KeyI: ['i', 73], Escape: ['Escape', 27]};
 const pointers = new Map();
 function sendKey(code, pressed) {

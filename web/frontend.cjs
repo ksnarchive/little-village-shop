@@ -54,7 +54,8 @@ async function check(engine) {
     assert.equal(await saved(),null);
     await tap(150,177); // Return to wardrobe.
 
-    // Name is focused by the wardrobe. Exercise real Russian text entry.
+    // Opening the editor leaves the keyboard closed. Tap the name deliberately.
+    await tap(450,90);
     await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Лёва');await wait(200);
     await tap(600,138); // Skin, next.
     await tap(600,186); // Hairstyle, next.
