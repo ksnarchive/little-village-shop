@@ -20,6 +20,8 @@ Earlier milestone screenshots below document their older builds.
 
 ## Playable slice
 
+- The shop uses a smooth, bounded follow camera at **1.6×**; HUD and touch controls keep
+  their screen scale. [Zoom comparisons, camera reuse and verification](docs/camera-review.md).
 - Original pixel-art shop, shopkeeper, directional idle/walking poses, walls and furniture collisions.
 - Physical **WASD** (including alternate keyboard layouts) or **arrow keys** to move.
 - **E** near the front of the green storage chest opens its inventory. A contextual prompt

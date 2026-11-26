@@ -45,9 +45,10 @@ async function check(name) {
     const layers = await Promise.all(['clothes', 'hands', 'body', 'hair', 'face', 'eyes'].map(async layer => fs.readFile(path.join(__dirname, `../assets/characters/${layer}.png`), 'base64')));
     // Observe rendered pixels: fixed walk durations drift on slower CI machines.
     // This reads the actual sprite, without reading or changing gameplay state.
+    const rug = await fs.readFile(path.join(__dirname, '../assets/shop/modular/rug.png'), 'base64');
     let lastPosition = {x: 320, y: 222};
     const playerPosition = async () => {
-      const found = await page.evaluate(async ({layers, lastPosition}) => {
+      const found = await page.evaluate(async ({layers, rug, lastPosition}) => {
       async function pixels(url) {
         const img = new Image(); img.src = url; await img.decode();
         const surface = document.createElement('canvas');
@@ -75,9 +76,29 @@ async function check(name) {
         }
       }
       const frame = await pixels(document.getElementById('canvas').toDataURL());
-      // Match the actual nearest-filtered sprite at the compact room's 1.15 zoom.
-      // Return world coordinates; gameplay checks still drive ordinary input.
-      const zoom = 1.15;
+      // Locate a real stationary world landmark to recover the moving camera's
+      // translation. Observe pixels only; do not read or alter game state.
+      const zoom = 1.6;
+      const landmark = await pixels('data:image/png;base64,' + rug);
+      const probes = [];
+      for (let y = 2; y < landmark.height - 2; y += 2) for (let x = 2; x < landmark.width - 2; x += 2) {
+        const i = (y * landmark.width + x) * 4;
+        if (landmark.data[i + 3] === 255) probes.push([
+          Math.floor((x + .5) * zoom), Math.floor((y + .5) * zoom), ...landmark.data.slice(i, i + 3)
+        ]);
+      }
+      let anchor = null;
+      for (let top = 175; top <= 310; top++) for (let left = 195; left <= 335; left++) {
+        let hits = 0;
+        for (const [x, y, r, g, b] of probes) {
+          const i = ((top + y) * frame.width + left + x) * 4;
+          if (Math.abs(frame.data[i] - r) <= 12 && Math.abs(frame.data[i + 1] - g) <= 12 && Math.abs(frame.data[i + 2] - b) <= 12) hits++;
+        }
+        const score = hits / probes.length;
+        if (!anchor || score > anchor.score) anchor = {left, top, score};
+      }
+      if (anchor.score < .35) throw new Error('Camera landmark not visible: ' + JSON.stringify(anchor));
+      const center = {x: 286 + (320 - anchor.left) / zoom, y: 205 + (180 - anchor.top) / zoom};
       const artScale = 40 / 64 * zoom;
       let best = null;
       for (let pose = 0; pose < 8; pose++) {
@@ -97,10 +118,11 @@ async function check(name) {
         if (samples.length < 20) throw new Error('Too few stable illustrated actor probes');
         // A 350ms held input moves at most 34 world pixels. Keeping the search
         // near the previous observation also avoids similarly coloured decor.
-        const expectedLeft = (lastPosition.x - 20 - 320) * zoom + 320;
-        const expectedTop = (lastPosition.y - 50 - 180) * zoom + 180;
-        for (let top = Math.max(40, Math.floor(expectedTop - 55)); top < Math.min(325, expectedTop + 55); top++)
-          for (let left = Math.max(105, Math.floor(expectedLeft - 55)); left < Math.min(525, expectedLeft + 55); left++) {
+        // Allow 80 screen pixels for the larger zoom and input scheduling.
+        const expectedLeft = (lastPosition.x - 20 - center.x) * zoom + 320;
+        const expectedTop = (lastPosition.y - 50 - center.y) * zoom + 180;
+        for (let top = Math.max(40, Math.floor(expectedTop - 80)); top < Math.min(325, expectedTop + 80); top++)
+          for (let left = Math.max(0, Math.floor(expectedLeft - 80)); left < Math.min(575, expectedLeft + 80); left++) {
           let hits = 0;
           for (let n = 0; n < samples.length; n++) {
             const [x, y, r, g, b] = samples[n];
@@ -110,14 +132,14 @@ async function check(name) {
           }
           const score = hits / samples.length;
           if (score >= .65 && (!best || score > best.score)) best = {
-            x: (left + 20 * zoom - 320) / zoom + 320,
-            y: (top + 50 * zoom - 180) / zoom + 180, score
+            x: (left + 20 * zoom - 320) / zoom + center.x,
+            y: (top + 50 * zoom - 180) / zoom + center.y, score
           };
         }
       }
       if (best) return best;
       throw new Error('Shopkeeper sprite not visible in the rendered world');
-      }, {layers, lastPosition});
+      }, {layers, rug, lastPosition});
       lastPosition = found;
       return found;
     };

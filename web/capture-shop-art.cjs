@@ -19,7 +19,7 @@ const {webkit, devices} = require('playwright');
     await page.waitForTimeout(350);
   };
   const capture = async name => {
-    await page.screenshot({path: `../docs/illustrated-shop-${name}.png`, scale: 'css'});
+    await page.screenshot({path: `../docs/${process.env.CAPTURE_PREFIX || 'illustrated-shop'}-${name}.png`, scale: 'css'});
     console.log(`Captured shop ${name}`);
   };
   try {
