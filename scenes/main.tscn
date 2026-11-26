@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3]
+[gd_scene load_steps=11 format=3]
 
 [ext_resource type="Script" path="res://scripts/shop.gd" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/characters/player.tscn" id="2"]
@@ -12,6 +12,7 @@
 [ext_resource type="Script" path="res://scripts/interactable.gd" id="8"]
 
 [ext_resource type="PackedScene" path="res://scenes/art/shop_interior.tscn" id="9"]
+[ext_resource type="Script" path="res://scripts/follow_camera.gd" id="10"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1")
@@ -21,10 +22,13 @@ script = ExtResource("1")
 [node name="Player" parent="." instance=ExtResource("2")]
 position = Vector2(320, 222)
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." node_paths=PackedStringArray("target")]
 position = Vector2(320, 180)
 enabled = true
-zoom = Vector2(1.15, 1.15)
+zoom = Vector2(1.6, 1.6)
+script = ExtResource("10")
+target = NodePath("../Player")
+world_bounds = Rect2(80, 16, 480, 296)
 
 [node name="Storage" parent="." instance=ExtResource("3")]
 position = Vector2(208, 224)

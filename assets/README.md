@@ -17,7 +17,8 @@ python3 tools/prepare_shop_art.py
 интерактивными объектами. Декор стоит за прежними границами прохода. Товары
 появляются на пустых полках только из настоящего инвентаря.
 
-Персонажи, товары и базовые UI-значки сохранены из предыдущего этапа.
+Товары и базовые UI-значки сохранены из предыдущего этапа. Актуальный конвейер
+персонажей описан ниже.
 `tools/build_shop_art.py` — **исторический** генератор старой комнаты и этих
 ресурсов; его запуск перезапишет новую мебель. Для текущего интерьера используйте
 только `prepare_shop_art.py`, который не трогает персонажей и товары.
@@ -35,12 +36,12 @@ python3 tools/prepare_shop_art.py
 | `shop/checkout.png` | 64×36: ореховый прилавок, зелёная механическая касса и звонок |
 | `shop/room.png` | Архивный фон предыдущего этапа; магазин его больше не загружает |
 | `items/*.png` | 16×16: яблоко, хлеб, молоко; одинаковые значки в мире, корзинах гостей и меню |
-| `characters/villagers.png` | 288×128: четыре чиби-персонажа, четыре направления, покой и два шага; 48 кадров 24×32 |
+| `characters/villagers.png` | Архивный атлас; текущие покупатели используют `npc_heads.png` и `npc_clothes.png` |
 | `ui/panel.png` | Кремовая страница с переплётом, полем и пиксельными стежками для девятисегментных панелей |
 | `ui/shop_panel.png` | Копия прежней страницы в насыщенной палитре магазина; тот же переплёт и девятисегментные поля |
 | `ui/{box,book,shelf,coin}.png` | Различимые значки доступных действий над выбранным объектом |
 
-В атласе: хозяйка в оливковом фартуке, гость в соломенной шляпе, седая гостья с
+В архивном атласе: хозяйка в оливковом фартуке, гость в соломенной шляпе, седая гостья с
 косичками, гость в оливковой кепке. Точка привязки (12,20), физика непрерывная;
 округляется только отрисовка. Фильтрация nearest, mipmaps выключены.
 
@@ -67,19 +68,36 @@ python3 tools/build_shop_font.py
 [`docs/illustrated-shop.md`](../docs/illustrated-shop.md).
 Предыдущий этап: [`docs/autumn-vintage.md`](../docs/autumn-vintage.md).
 
-## Village menu and character wardrobe
+## Игровые персонажи и гардеробная
 
-`frontend/village.png`, `dressing_room.png`, `cloud.png`, `leaves.png` and the
-`characters/{body,clothes,face,eyes,hair}.png` layers are original pixel artwork
-for this project. Rebuild with `python3 tools/build_frontend_art.py` (Pillow).
-No external art packs or generated runtime geometry are used for these scenes.
+Оригинальные художественные мастера в `art/characters/` созданы с помощью image
+generation с персонажем поезда как ориентиром. Восемь причёсок и шесть нарядов
+имеют фронтальный, задний и левый виды; правый получается зеркальным отражением.
+Кожа, радужки и волосы выделены в независимые нейтральные материалы. Все прежние
+ID и палитры `CharacterAppearance` сохранены; каждый вариант доступен всем.
 
-Character cells are 24×32, ordered down / up / left / right, with idle / step A /
-step B in each direction. Each garment or hairstyle occupies a complete atlas
-row; other layers use one row. White and grey skin, eye and hair ramps are tinted
-by `CharacterArt`. Numeric option IDs in `CharacterAppearance` are save-format
-IDs: append future options rather than reorder them. Clothes are painted in the
-shop's autumn palette and are available to every character.
+```sh
+python3 tools/prepare_character_art.py
+```
+
+Ячейка — 64×96, игровой прямоугольник — 40×60 с прежним положением стоп.
+Направления down / up / left / right. Одежда и руки имеют восемь поз на вид:
+покой, покой при моргании, шесть фаз ходьбы. Головы, лицо и радужки используют
+только две позы на вид, волосы — три положения кончиков. Рендерер согласует
+покачивание головы с шагом тела, не дублируя портрет для каждого кадра ног.
+Слои покупателей `npc_heads.png` / `npc_clothes.png` используют ту же сетку,
+масштаб и цикл. Их три безымянных варианта различаются лицом, возрастом и одеждой.
+
+`frontend/dressing_room.png` — новая гардеробная с пустым стеклом; отражение
+героя рисуется тем же `CharacterArt`, что герой на ковре и в магазине.
+`wardrobe_ambient.png` — небольшой спокойный фон полей редактора. Мастера
+исключены из импорта и экспорта через `art/.gdignore`; в игре нет Pillow,
+генерации пикселей или новых шейдеров. [Проверка и реальные кадры](../docs/character-art-direction.md).
+
+`frontend/{village,cloud,leaves}.png` остаются из предыдущего этапа. Их старый
+генератор `tools/build_frontend_art.py` также перезаписывает гардеробную и
+персонажей: не запускайте его для текущих ресурсов. Текущий источник подготовки
+персонажей — только `prepare_character_art.py`.
 
 ## Поезд: иллюстрация и слои внешности
 

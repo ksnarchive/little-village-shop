@@ -15,6 +15,12 @@ var facing: Vector2 = Vector2.DOWN
 var walking: bool = false
 var step_time: float = 0.0
 var controls_enabled: bool = true
+var art_time := 0.0
+
+func _process(delta: float) -> void:
+    if controls_enabled:
+        art_time += delta
+        queue_redraw()
 
 func _physics_process(delta: float) -> void:
     if not controls_enabled:
@@ -38,4 +44,4 @@ func _physics_process(delta: float) -> void:
     queue_redraw()
 
 func _draw() -> void:
-    CharacterArt.draw_actor(self, appearance, facing, walking, step_time)
+    CharacterArt.draw_actor(self, appearance, facing, walking, step_time, CharacterArt.ORIGIN, 1.0, art_time)

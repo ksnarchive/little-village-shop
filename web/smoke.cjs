@@ -42,12 +42,13 @@ async function check(name) {
       await page.mouse.move(b.x + b.width / 2, b.y + b.height / 2);
       await page.mouse.down(); await wait(ms); await page.mouse.up(); await wait(150);
     };
-    const layers = await Promise.all(['body', 'clothes', 'face', 'eyes', 'hair'].map(async layer => fs.readFile(path.join(__dirname, `../assets/characters/${layer}.png`), 'base64')));
+    const layers = await Promise.all(['clothes', 'hands', 'body', 'hair', 'face', 'eyes'].map(async layer => fs.readFile(path.join(__dirname, `../assets/characters/${layer}.png`), 'base64')));
     // Observe rendered pixels: fixed walk durations drift on slower CI machines.
     // This reads the actual sprite, without reading or changing gameplay state.
+    const rug = await fs.readFile(path.join(__dirname, '../assets/shop/modular/rug.png'), 'base64');
     let lastPosition = {x: 320, y: 222};
     const playerPosition = async () => {
-      const found = await page.evaluate(async ({layers, lastPosition}) => {
+      const found = await page.evaluate(async ({layers, rug, lastPosition}) => {
       async function pixels(url) {
         const img = new Image(); img.src = url; await img.decode();
         const surface = document.createElement('canvas');
@@ -56,58 +57,89 @@ async function check(name) {
         return ctx.getImageData(0, 0, img.width, img.height);
       }
       const sheets = await Promise.all(layers.map(data => pixels('data:image/png;base64,' + data)));
-      const source = new ImageData(288, 32);
-      const tints = [[245,211,189], [255,255,255], [255,255,255], [116,81,61], [128,96,75]];
-      for (let n = 0; n < sheets.length; n++) {
-        const sheet = sheets[n];
-        // Default hair is row 0, every layer has the same 12 aligned cells.
-        for (let i = 0; i < source.data.length; i += 4) {
-          if (!sheet.data[i + 3]) continue;
-          for (let c = 0; c < 3; c++) source.data[i + c] = Math.round(sheet.data[i + c] * tints[n][c] / 255);
-          source.data[i + 3] = 255;
+      const source = new ImageData(64 * 8, 96);
+      const tints = [[255,255,255], [245,211,189], [245,211,189], [128,96,75], [255,255,255], [116,81,61]];
+      // Observation follows pointer-up + 150ms settling, so compare four idle
+      // views and their blink variants. Head materials are shared across walks.
+      for (let pose = 0; pose < 8; pose++) {
+        const direction = Math.floor(pose / 2), blink = pose % 2;
+        const columns = [direction * 8, direction * 8, direction * 2 + blink, direction * 3, direction * 2 + blink, direction * 2 + blink];
+        for (let n = 0; n < sheets.length; n++) {
+          const sheet = sheets[n];
+          for (let y = 0; y < 96; y++) for (let x = 0; x < 64; x++) {
+            const i = (y * source.width + pose * 64 + x) * 4;
+            const j = (y * sheet.width + columns[n] * 64 + x) * 4;
+            if (!sheet.data[j + 3]) continue;
+            for (let c = 0; c < 3; c++) source.data[i + c] = Math.round(sheet.data[j + c] * tints[n][c] / 255);
+            source.data[i + 3] = 255;
+          }
         }
       }
       const frame = await pixels(document.getElementById('canvas').toDataURL());
-      // Match the actual nearest-filtered sprite at the compact room's 1.15 zoom.
-      // Return world coordinates; gameplay checks still drive ordinary input.
-      const zoom = 1.15;
+      // Locate a real stationary world landmark to recover the moving camera's
+      // translation. Observe pixels only; do not read or alter game state.
+      const zoom = 1.6;
+      const landmark = await pixels('data:image/png;base64,' + rug);
+      const probes = [];
+      for (let y = 2; y < landmark.height - 2; y += 2) for (let x = 2; x < landmark.width - 2; x += 2) {
+        const i = (y * landmark.width + x) * 4;
+        if (landmark.data[i + 3] === 255) probes.push([
+          Math.floor((x + .5) * zoom), Math.floor((y + .5) * zoom), ...landmark.data.slice(i, i + 3)
+        ]);
+      }
+      let anchor = null;
+      for (let top = 175; top <= 310; top++) for (let left = 195; left <= 335; left++) {
+        let hits = 0;
+        for (const [x, y, r, g, b] of probes) {
+          const i = ((top + y) * frame.width + left + x) * 4;
+          if (Math.abs(frame.data[i] - r) <= 12 && Math.abs(frame.data[i + 1] - g) <= 12 && Math.abs(frame.data[i + 2] - b) <= 12) hits++;
+        }
+        const score = hits / probes.length;
+        if (!anchor || score > anchor.score) anchor = {left, top, score};
+      }
+      if (anchor.score < .35) throw new Error('Camera landmark not visible: ' + JSON.stringify(anchor));
+      const center = {x: 286 + (320 - anchor.left) / zoom, y: 205 + (180 - anchor.top) / zoom};
+      const artScale = 40 / 64 * zoom;
       let best = null;
-      for (let pose = 0; pose < 12; pose++) {
+      for (let pose = 0; pose < 8; pose++) {
         const samples = [];
-        for (let y = 4; y < 29; y++) for (let x = 3; x < 21; x++) {
-          const i = (y * source.width + pose * 24 + x) * 4;
-          // Flat interior pixels survive the zoom's subpixel phase unchanged.
+        for (let y = 5; y < 94; y++) for (let x = 6; x < 58; x++) {
+          const i = (y * source.width + pose * 64 + x) * 4;
+          // Stable interior colour clusters survive downsampling and the
+          // subpixel breathing transform; edges are intentionally not probes.
           const same = (dx, dy) => {
-            const j = ((y + dy) * source.width + pose * 24 + x + dx) * 4;
-            return [0, 1, 2, 3].every(c => source.data[j + c] === source.data[i + c]);
+            const j = ((y + dy) * source.width + pose * 64 + x + dx) * 4;
+            return source.data[j + 3] === 255 && [0, 1, 2].every(c => Math.abs(source.data[j + c] - source.data[i + c]) <= 12);
           };
           if (source.data[i + 3] === 255 && same(-1, 0) && same(1, 0) && same(0, -1) && same(0, 1)) samples.push([
-            Math.floor((x + .5) * zoom), Math.floor((y + .5) * zoom), ...source.data.slice(i, i + 3)
+            Math.floor((x + .5) * artScale), Math.floor((y + .5) * artScale), ...source.data.slice(i, i + 3)
           ]);
         }
+        if (samples.length < 20) throw new Error('Too few stable illustrated actor probes');
         // A 350ms held input moves at most 34 world pixels. Keeping the search
         // near the previous observation also avoids similarly coloured decor.
-        const expectedLeft = (lastPosition.x - 12 - 320) * zoom + 320;
-        const expectedTop = (lastPosition.y - 20 - 180) * zoom + 180;
-        for (let top = Math.max(40, Math.floor(expectedTop - 55)); top < Math.min(325, expectedTop + 55); top++)
-          for (let left = Math.max(105, Math.floor(expectedLeft - 55)); left < Math.min(525, expectedLeft + 55); left++) {
+        // Allow 80 screen pixels for the larger zoom and input scheduling.
+        const expectedLeft = (lastPosition.x - 20 - center.x) * zoom + 320;
+        const expectedTop = (lastPosition.y - 50 - center.y) * zoom + 180;
+        for (let top = Math.max(40, Math.floor(expectedTop - 80)); top < Math.min(325, expectedTop + 80); top++)
+          for (let left = Math.max(0, Math.floor(expectedLeft - 80)); left < Math.min(575, expectedLeft + 80); left++) {
           let hits = 0;
           for (let n = 0; n < samples.length; n++) {
             const [x, y, r, g, b] = samples[n];
             const i = ((top + y) * frame.width + left + x) * 4;
-            if (Math.abs(frame.data[i] - r) <= 1 && Math.abs(frame.data[i + 1] - g) <= 1 && Math.abs(frame.data[i + 2] - b) <= 1) hits++;
+            if (Math.abs(frame.data[i] - r) <= 12 && Math.abs(frame.data[i + 1] - g) <= 12 && Math.abs(frame.data[i + 2] - b) <= 12) hits++;
             if (hits + samples.length - n - 1 < samples.length * .65) break;
           }
           const score = hits / samples.length;
           if (score >= .65 && (!best || score > best.score)) best = {
-            x: (left + 12 * zoom - 320) / zoom + 320,
-            y: (top + 20 * zoom - 180) / zoom + 180, score
+            x: (left + 20 * zoom - 320) / zoom + center.x,
+            y: (top + 50 * zoom - 180) / zoom + center.y, score
           };
         }
       }
       if (best) return best;
       throw new Error('Shopkeeper sprite not visible in the rendered world');
-      }, {layers, lastPosition});
+      }, {layers, rug, lastPosition});
       lastPosition = found;
       return found;
     };

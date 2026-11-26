@@ -27,9 +27,9 @@ async function check(engine) {
   const boot=async()=>{await page.locator('#start').tap();await page.waitForFunction(()=>document.body.dataset.gameReady==='true',null,{timeout:60000});await wait(1000);};
   const spritePixels=()=>page.evaluate(async()=>{
     const image=new Image();image.src=document.querySelector('#canvas').toDataURL();await image.decode();
-    const surface=document.createElement('canvas');surface.width=40;surface.height=48;
-    const ctx=surface.getContext('2d');ctx.drawImage(image,300,196,40,48,0,0,40,48);
-    return Array.from(ctx.getImageData(0,0,40,48).data);
+    const surface=document.createElement('canvas');surface.width=76;surface.height=96;
+    const ctx=surface.getContext('2d');ctx.drawImage(image,282,160,76,96,0,0,76,96);
+    return Array.from(ctx.getImageData(0,0,76,96).data);
   });
   const saved=()=>page.evaluate(()=>new Promise((resolve,reject)=>{
     const r=indexedDB.open('/userfs');r.onerror=()=>reject(r.error);r.onsuccess=()=>{
@@ -86,7 +86,15 @@ async function check(engine) {
     assert.equal(await page.locator('#movement').isVisible(),true);
     await page.setViewportSize({width:1280,height:720});await wait(600);await capture('character-in-shop');const firstSprite=await spritePixels();
     await page.reload();await boot();await tap(150,206); // Continue with non-default appearance.
-    await wait(500);await capture('character-continued');assert.deepEqual(await spritePixels(),firstSprite,'Rendered non-default character survives Continue pixel for pixel');
+    await wait(500);await capture('character-continued');
+    // Idle now breathes and blinks. Require the exact original rendered pose to
+    // recur, rather than requiring two unrelated animation clocks to be equal.
+    let samePose=false;
+    for(let attempt=0;attempt<60;attempt++) {
+      if(JSON.stringify(await spritePixels())===JSON.stringify(firstSprite)){samePose=true;break;}
+      await wait(100);
+    }
+    assert(samePose,'Rendered non-default character survives Continue pixel for pixel through the idle cycle');
     // Manual save after Continue proves loaded appearance is retained by the real player.
     await page.keyboard.press('Escape');await wait(200);await tap(320,192);await wait(1800);
     assert.deepEqual((await saved()).character,data.character);

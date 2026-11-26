@@ -32,7 +32,7 @@ func _run() -> void:
 	for index in range(48):
 		var look := CharacterAppearance.randomized(rng, "Женя Ёлкина")
 		look.hairstyle = index % 8
-		look.outfit = index % 6
+		look.outfit = int(index / 8) # All 8 x 6 pairs, rather than a 24-pair LCM loop.
 		shop.player.set_appearance(look)
 		check(store.save_game(shop), "Appearance %d writes atomically" % index)
 		shop.player.set_appearance(CharacterAppearance.DEFAULT)
@@ -59,9 +59,11 @@ func _run() -> void:
 			invalid.character[key] = bad
 			var before := store.capture(shop)
 			check(not store.apply(invalid, shop) and store.capture(shop) == before, "Invalid %s rejected atomically" % key)
-	for atlas in [CharacterArt.BODY, CharacterArt.EYES, CharacterArt.FACE, CharacterArt.CLOTHES, CharacterArt.HAIR]:
-		check(atlas.get_width() == 288, "Aligned atlas has all 12 direction/animation cells")
-	check(CharacterArt.CLOTHES.get_height() == 6 * 32 and CharacterArt.HAIR.get_height() == 8 * 32, "Six garments and eight hairstyles are actual pixel sprites")
+	for atlas in [CharacterArt.BODY, CharacterArt.EYES, CharacterArt.FACE, CharacterArt.CLOTHES, CharacterArt.HAIR, CharacterArt.HANDS]:
+		check(atlas.get_width() <= 2048 and atlas.get_width() % 256 == 0, "Aligned material atlas fits mobile 2048px textures and four complete views")
+	check(CharacterArt.BODY.get_width() == 512 and CharacterArt.HAIR.get_width() == 768 and VillagerArt.HEADS.get_width() == 256, "Static head materials are shared across walk poses to bound mobile memory")
+	check(CharacterArt.CLOTHES.get_height() == 6 * 96 and CharacterArt.HAIR.get_height() == 8 * 96, "Six garments and eight hairstyles retain actual painted resources")
+	_check_art()
 	shop.free()
 	var entry := preload("res://scenes/start.tscn").instantiate()
 	entry.store = store
@@ -78,6 +80,9 @@ func _run() -> void:
 	entry.confirm_new_game()
 	var wardrobe: Control = entry.creator
 	check(not wardrobe.name_input.has_focus() and wardrobe.confirm_button.has_focus(), "Opening wardrobe focuses a non-text action, never the name/keyboard")
+	entry.animations = false
+	check(not CharacterArt.motion_enabled(wardrobe.preview) and not CharacterArt.motion_enabled(entry.shop.player), "Existing reduced-motion preference reaches both preview and world actors")
+	entry.animations = true
 	var bytes := FileAccess.get_file_as_string(PATH)
 	wardrobe.name_input.text = " "
 	wardrobe.name_input.text_changed.emit(" ")
@@ -118,3 +123,54 @@ func _run() -> void:
 	clean()
 	print("Little Village Shop character: %d checks, %d failures" % [checks, failures])
 	quit(0 if failures == 0 else 1)
+
+func _check_art() -> void:
+	# Stable IDs must select different art in every direction, not one universal sprite.
+	for texture in [CharacterArt.HAIR, CharacterArt.CLOTHES, VillagerArt.HEADS]:
+		var image: Image = texture.get_image()
+		for direction in range(4):
+			var seen := {}
+			for variant in range(image.get_height() / 96):
+				var part := image.get_region(Rect2i(direction * int(image.get_width() / 4), variant * 96, 64, 96))
+				check(not part.is_invisible(), "Every selectable material has pixels in every direction")
+				seen[part.get_data().hex_encode().sha256_text()] = true
+			check(seen.size() == image.get_height() / 96, "All hairstyle/outfit/buyer IDs select distinct painted views")
+	for texture in [CharacterArt.BODY, CharacterArt.HANDS, CharacterArt.HAIR, CharacterArt.EYES]:
+		var bytes: PackedByteArray = texture.get_image().get_data()
+		var neutral := true
+		for offset in range(0, bytes.size(), 4):
+			if bytes[offset + 3] > 0 and (bytes[offset] != bytes[offset + 1] or bytes[offset] != bytes[offset + 2]):
+				neutral = false
+				break
+		check(neutral, "Tintable skin/hair/iris plates contain neutral material values, no false-color leakage")
+	for texture in [CharacterArt.CLOTHES, VillagerArt.CLOTHES]:
+		var image: Image = texture.get_image()
+		for variant in range(image.get_height() / 96):
+			for direction in range(4):
+				var drawings := {}
+				for pose in range(2, 8):
+					var part := image.get_region(Rect2i((direction * 8 + pose) * 64, variant * 96, 64, 96))
+					drawings[part.get_data().hex_encode().sha256_text()] = true
+				check(drawings.size() == 6, "Each outfit and NPC has six genuinely different walk drawings")
+	for facing in [Vector2.DOWN, Vector2.UP, Vector2.LEFT, Vector2.RIGHT]:
+		var phases := {}
+		for index in range(6):
+			phases[CharacterArt.cell(facing, true, index * TAU / 6.0 + 0.01)] = true
+		check(phases.size() == 6, "Walking uses six phases for every direction")
+		check(CharacterArt.cell(facing, true, 0) == CharacterArt.cell(facing, true, TAU), "Walk cycle wraps without a pose discontinuity")
+		check(CharacterArt.cell(facing, false, 0, 4.7) != CharacterArt.cell(facing, false, 0, 1), "Quiet idle includes a separate blink pose")
+		check(CharacterArt.cell(facing, true, 1, 4.7, false) == CharacterArt.cell(facing, false, 0, 0, false), "Reduced motion holds the neutral directional pose")
+	var a := CharacterArt.target_rect(CharacterArt.ORIGIN, 1.0, 0, true)
+	var b := CharacterArt.target_rect(CharacterArt.ORIGIN, 1.0, 1, true)
+	check(is_equal_approx(a.end.y, b.end.y), "Breathing keeps the feet anchored")
+	check(is_equal_approx(a.end.y, 10.0), "Larger visuals preserve the existing floor anchor")
+	var queue_fits := true
+	for texture in [VillagerArt.HEADS, VillagerArt.CLOTHES]:
+		var image: Image = texture.get_image()
+		for variant in range(3):
+			for column in range(image.get_width() / 64):
+				var used := image.get_region(Rect2i(column * 64, variant * 96, 64, 96)).get_used_rect()
+				var left := CharacterArt.ORIGIN.x + used.position.x * CharacterArt.WORLD_SIZE.x / 64
+				var right := CharacterArt.ORIGIN.x + used.end.x * CharacterArt.WORLD_SIZE.x / 64
+				queue_fits = queue_fits and left >= -14.0 and right <= 14.0
+	check(queue_fits, "All buyer silhouettes and walk poses fit the unchanged 28px queue spacing")
