@@ -16,7 +16,7 @@ async function check(engine){
  try{
   await page.goto(process.env.GAME_URL||'http://127.0.0.1:8060/');await boot();await tap(150,177);
   await tap(450,90);await page.keyboard.press('ControlOrMeta+A');await page.keyboard.insertText('Тая');await tap(600,138);await tap(600,186);await tap(450,320);
-  const initial=await until(d=>d.story?.train_line===0&&!d.story.train_complete);assert.equal(initial.character.name,'Тая');assert.equal(initial.version,3);assert.equal(await page.locator('#movement').isVisible(),false);
+  const initial=await until(d=>d.story?.train_line===0&&!d.story.train_complete);assert.equal(initial.character.name,'Тая');assert.equal(initial.version,4);assert.equal(await page.locator('#movement').isVisible(),false);
   await wait(4200);assert.equal((await saved()).story.train_line,0,'No auto-advancing dialogue');await capture('train-interior-dialogue');
   const frame=await image();await wait(550);assert.notEqual(await image(),frame,'Rendered landscape moves');
   await tap(100,160);await tap(100,160);await until(d=>d.story.train_line===1);assert.equal((await saved()).story.train_line,1,'Touch reveals without double advancement');
@@ -28,8 +28,8 @@ async function check(engine){
   for(const v of [{width:667,height:375},{width:844,height:300},{width:390,height:844}]){await page.setViewportSize(v);await wait(400);const b=await page.locator('#canvas').boundingBox();assert(b.x>=0&&b.y>=0&&b.x+b.width<=v.width+1&&b.y+b.height<=v.height+1);assert.equal(await page.locator('#movement').isVisible(),false)}
   await page.setViewportSize({width:1280,height:720});await wait(600);
   for(let line=4;line<=10;line++){await wait(4000);await page.keyboard.press('Space');await until(d=>d.story.train_line===line)}
-  await wait(3900);await capture('train-arrival');await page.keyboard.press('Enter');await wait(400);await until(d=>d.story.train_complete);await page.waitForFunction(()=>!document.body.classList.contains('frontend'));await capture('train-hero-in-shop');
-  const completed=await saved();assert.deepEqual(completed.character,initial.character);for(const key of ['economy','storage','bag','shelves','minute'])assert.deepEqual(completed[key],initial[key],`Train preserves ${key}`);
+  await wait(3900);await capture('train-arrival');await page.keyboard.press('Enter');await wait(400);await until(d=>d.story.train_complete);await page.waitForFunction(()=>!document.body.classList.contains('frontend'));await capture('train-hero-on-station');
+  const completed=await saved();assert.equal(completed.journey.location,'station');assert.deepEqual(completed.character,initial.character);for(const key of ['economy','storage','bag','shelves','minute'])assert.deepEqual(completed[key],initial[key],`Train preserves ${key}`);
   await page.reload();await boot();await tap(150,206);await page.waitForFunction(()=>!document.body.classList.contains('frontend'));assert.equal(await page.locator('#movement').isVisible(),true);assert.deepEqual(errors,[],`${engine}: browser/engine errors`);
   console.log(`${engine}: train motion, touch/keyboard, manual dialogue, interrupted Continue, portrait/rotation, cancel skip, arrival/fade, identity + shop persistence: PASS`);
  }catch(e){await capture('train-failure').catch(()=>{});console.error(errors);throw e}finally{await context.close();await browser.close()}

@@ -14,6 +14,8 @@ var root: Control
 var panel: PanelContainer
 var backdrop: Control
 var train: Control
+var station: Node2D
+var transition: LocationTransition
 var creator: Control
 var settings_panel: PanelContainer
 var settings := ConfigFile.new()
@@ -31,6 +33,10 @@ func _ready() -> void:
 	shop.process_mode = Node.PROCESS_MODE_DISABLED
 	shop.inventory_ui.get_node("Root").hide()
 	shop.save_store = store
+	shop.hide()
+	shop.get_node("Camera2D").enabled = false
+	transition = LocationTransition.new()
+	add_child(transition)
 	_build_menu()
 	_set_frontend(true)
 	refresh()
@@ -150,6 +156,9 @@ func _create_character(appearance: Dictionary) -> void:
 	candidate.save_store = store
 	candidate.player.set_appearance(appearance)
 	candidate.story = TrainStory.fresh()
+	candidate.journey = LocationState.fresh("train")
+	candidate.hide()
+	candidate.get_node("Camera2D").enabled = false
 	if not candidate.save_game():
 		creator.error.text = store.message
 		candidate.free()
@@ -177,9 +186,12 @@ func _resume_story() -> void:
 
 func _save_train_checkpoint(line: int, complete: bool) -> bool:
 	var previous: Dictionary = shop.story.duplicate(true)
+	var previous_journey: Dictionary = shop.journey.duplicate(true)
 	shop.story = {"train_line": line, "train_complete": complete}
+	shop.journey = LocationState.fresh("station" if complete else "train")
 	if not shop.save_game():
 		shop.story = previous
+		shop.journey = previous_journey
 		return false
 	return true
 
@@ -191,11 +203,60 @@ func _train_finished() -> void:
 
 func _start() -> void:
 	_set_frontend(false)
-	shop.process_mode = Node.PROCESS_MODE_INHERIT
-	shop.inventory_ui.get_node("Root").show()
 	menu.hide()
 	root.process_mode = Node.PROCESS_MODE_DISABLED
+	if shop.journey.location != "shop":
+		# Outdoor locations share the state/appearance/checkpoint/travel contract.
+		station = load(LocationState.LOCATIONS[shop.journey.location].scene).instantiate()
+		station.appearance = shop.player.appearance.duplicate(true)
+		station.state = shop.journey.duplicate(true)
+		station.bag = shop.player_inventory
+		station.checkpoint = _save_journey
+		add_child(station)
+		station.travel_requested.connect(_travel)
+		transition.reveal()
+		return
+	shop.show()
+	shop.get_node("Camera2D").enabled = true
+	shop.get_node("Camera2D").snap_to_target()
+	shop.process_mode = Node.PROCESS_MODE_INHERIT
+	shop.inventory_ui.get_node("Root").show()
 	shop._on_menu_visibility_changed(shop.inventory_ui.view != InventoryMenu.View.CLOSED)
+
+func _save_journey(value: Dictionary) -> bool:
+	var previous: Dictionary = shop.journey.duplicate(true)
+	shop.journey = value.duplicate(true)
+	if not shop.save_game():
+		shop.journey = previous
+		return false
+	return true
+
+func _travel(destination: String) -> void:
+	if station == null:
+		return
+	if transition.busy:
+		station.leaving = false
+		station._modal_changed(false)
+		return
+	await transition.cover()
+	# A held finger/key belongs to the departing location, not its replacement.
+	LocationTransition.release_movement()
+	var next: Dictionary = station.snapshot()
+	next.location = LocationTransition.DESTINATIONS.get(destination, "")
+	if LocationState.LOCATIONS.has(next.location):
+		var point: Vector2 = LocationState.LOCATIONS[next.location].spawn
+		next.position = [point.x, point.y]
+	if not LocationState.LOCATIONS.has(next.location) or not _save_journey(next):
+		station.leaving = false
+		station._modal_changed(false)
+		station.ui.notice.text = "Переход не сохранён. Отойдите от выхода и попробуйте снова."
+		await transition.reveal()
+		return
+	station.free()
+	station = null
+	_start()
+	LocationTransition.release_movement()
+	await transition.reveal()
 
 func open_settings() -> void:
 	panel.hide()

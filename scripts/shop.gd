@@ -6,6 +6,7 @@ var player_inventory: Inventory
 var economy: ShopEconomy
 var save_store: SaveStore
 var story := TrainStory.completed()
+var journey := LocationState.fresh()
 var last_save_message: String = ""
 var day: ShopDay
 @onready var player: Shopkeeper = $Player
