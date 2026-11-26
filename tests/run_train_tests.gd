@@ -125,7 +125,8 @@ func _run() -> void:
 	train.advance()
 	check(entry.shop.story.train_complete and train._ending and entry.menu.visible, "Completion is committed before fade or shop activation")
 	await create_timer(1.4).timeout
-	check(entry.train == null and not entry.menu.visible and entry.shop.process_mode == Node.PROCESS_MODE_INHERIT, "Fade ends in existing shop")
+	check(entry.train == null and not entry.menu.visible and entry.station != null
+		and entry.shop.process_mode == Node.PROCESS_MODE_DISABLED, "Fade ends on the station with shop disabled")
 	check(entry.shop.player.appearance == look and entry.shop.economy.balance == 100, "Shop retains hero and starting economy")
 	entry.free()
 	await process_frame
@@ -149,6 +150,7 @@ func _run() -> void:
 		check(not entry.store.apply(invalid, entry.shop) and entry.store.capture(entry.shop) == before, "Malformed checkpoint rejected before any state mutation")
 	# Backup recovery resumes a valid pending line instead of starting from zero.
 	entry.shop.story = {"train_line": 3, "train_complete": false}
+	entry.shop.journey = LocationState.fresh("train")
 	entry.store.save_game(entry.shop)
 	entry.shop.story.train_line = 4
 	entry.store.save_game(entry.shop)

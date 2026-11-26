@@ -118,7 +118,7 @@ func _build_modal() -> void:
 	box.add_theme_constant_override("separation", 10)
 	panel.add_child(box)
 	box.add_child(FrontendUI.label("Пропустить поездку?", 20))
-	var hint := FrontendUI.label("История продолжится в лавке.\nК поездке можно вернуться в новой игре.", 14)
+	var hint := FrontendUI.label("История продолжится на станции.\nК поездке можно вернуться в новой игре.", 14)
 	hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	hint.custom_minimum_size.x = 290
 	box.add_child(hint)
@@ -182,7 +182,7 @@ func _show_line() -> void:
 	words.visible_characters = 0 if animated else -1
 	error.text = ""
 	error.hide()
-	next_button.text = "В лавку  ›" if line == TrainStory.LAST_LINE else "Далее  ›"
+	next_button.text = "На платформу  ›" if line == TrainStory.LAST_LINE else "Далее  ›"
 	_layout.call_deferred()
 	if line == TrainStory.LAST_LINE:
 		_braking = 0.001

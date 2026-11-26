@@ -21,7 +21,8 @@ func refresh_target() -> void:
 	if enabled:
 		for node in get_tree().get_nodes_in_group("interactables"):
 			var candidate := node as Interactable
-			if candidate == null or not candidate.can_interact(actor):
+			# Inactive locations can remain loaded as persistent simulation state.
+			if candidate == null or not candidate.can_process() or not candidate.is_visible_in_tree() or not candidate.can_interact(actor):
 				continue
 			var distance := actor.global_position.distance_squared_to(candidate.interaction_position())
 			if distance <= distance_squared and _has_clear_path(candidate):

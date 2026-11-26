@@ -20,6 +20,9 @@ Earlier milestone screenshots below document their older builds.
 
 ## Playable slice
 
+- New heroes arrive at an autumn railway station after the train prologue. Explore,
+  inspect the timetable and village sign, then follow the path to the shop (temporary
+  village connection). [Station art, transitions, saves and real captures](docs/station-review.md).
 - The shop uses a smooth, bounded follow camera at **1.6×**; HUD and touch controls keep
   their screen scale. [Zoom comparisons, camera reuse and verification](docs/camera-review.md).
 - Original pixel-art shop, shopkeeper, directional idle/walking poses, walls and furniture collisions.
@@ -116,7 +119,10 @@ Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/d
 - Autosave runs after the final visitor leaves and the day report appears, and again after
   **«Следующий день»** resets daily counters at 08:00. Success/failure appears in the report
   or HUD, and the pause panel. A failed autosave leaves the last good save available.
-- The single slot is **`user://village_save.json`**, schema **version 1**. On Windows, Godot's
+- The single slot is **`user://village_save.json`**, schema **version 4**. Versions 1–3
+  migrate on load: completed games remain in the shop; unfinished trips resume the train.
+  Version 4 also records outdoor position, arrival/departure and thought progress.
+  On Windows, Godot's
   default location is `%APPDATA%/Godot/app_userdata/Little Village Shop/`. `.bak` is a recovery
   generation, not an additional selectable slot. No cloud sync is used.
 - A save is serialized to `.tmp`, flushed, closed and read back through full validation.
@@ -125,7 +131,7 @@ Previews: [clock during lunch](docs/day-clock.png) · [end-of-day report](docs/d
   Failed writes/copies/renames preserve the primary; corrupt primary data never replaces a
   valid backup. A missing/corrupt primary can fall back to `.bak`, with a visible notice.
   Uncommitted `.tmp` files are ignored. Unsupported versions are rejected without silent
-  fallback/downgrade or file changes; version migration is not yet needed or provided.
+  fallback/downgrade or file changes. Migrations never rewrite a file merely by reading it.
 - Loading validates every field and all inventories before changing gameplay. Quantities
   replace existing stock, the empty customer flow is rebuilt, stale menus/effects are cleared,
   and UI signals refresh the clock, economy, shelves and inventories. Reports are reconstructed

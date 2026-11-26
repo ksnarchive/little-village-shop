@@ -78,7 +78,7 @@ async function check(engine) {
     await capture('wardrobe-iphone-outfits');
     await tap(210,699); // Confirm.
     const data=await awaitSave();
-    assert.equal(data.character.name,'Лёва');assert.equal(data.version,3);
+    assert.equal(data.character.name,'Лёва');assert.equal(data.version,4);
     for(const [key,count] of Object.entries({skin:6,hairstyle:8,hair_color:8,eyes:6,outfit:6}))assert(Number.isInteger(data.character[key])&&data.character[key]>=0&&data.character[key]<count);
     assert.equal(data.story.train_complete,false);
     await require('./train-helpers.cjs').skipTrain(page,tap);
